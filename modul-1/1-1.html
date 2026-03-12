@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>1.1 — From URL to Webpage · Web Security</title>
+  <style>
+
+    /* ══════════════════════════════════════
+       BASE
+    ══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0d1117;
+      --bg-card:     #161b22;
+      --bg-hover:    #1c2333;
+      --border:      #30363d;
+      --border-soft: #21262d;
+      --text:        #c9d1d9;
+      --text-muted:  #8b949e;
+      --text-bright: #e6edf3;
+      --blue:        #58a6ff;
+      --green:       #3fb950;
+      --green-dark:  #238636;
+      --red:         #f78166;
+      --yellow:      #e3b341;
+      --purple:      #bc8cff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 16px;
+    }
+
+    /* ══════════════════════════════════════
+       NAV
+    ══════════════════════════════════════ */
+    nav {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-left { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-muted); }
+    .nav-left a { color: var(--text-muted); }
+    .nav-left a:hover { color: var(--blue); text-decoration: none; }
+    .nav-sep { color: var(--border); }
+    .nav-current { color: var(--text-bright); font-weight: 600; }
+
+    .nav-right { display: flex; gap: 0.5rem; }
+
+    .nav-btn {
+      background: var(--bg-hover);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.3rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .nav-btn:hover { background: var(--border); color: var(--text-bright); text-decoration: none; }
+    .nav-btn.next { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
+    .nav-btn.next:hover { background: var(--green); }
+
+    /* ══════════════════════════════════════
+       PAGE HEADER
+    ══════════════════════════════════════ */
+    .page-header {
+      background: linear-gradient(160deg, #0d1f35 0%, #0d1117 70%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem 2rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .module-tag {
+      display: inline-block;
+      background: #1f2d3d;
+      border: 1px solid #1f6feb55;
+      color: var(--blue);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      margin-bottom: 0.75rem;
+    }
+
+    .page-header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: var(--text-bright);
+      margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 600px;
+    }
+
+    .header-meta {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .header-meta span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      padding: 0.2rem 0.75rem;
+      border-radius: 20px;
+    }
+
+    /* ══════════════════════════════════════
+       CONTENT WRAPPER
+    ══════════════════════════════════════ */
+    .content {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2rem 2rem 4rem;
+    }
+
+    /* ══════════════════════════════════════
+       OBJECTIVES BOX
+    ══════════════════════════════════════ */
+    .objectives {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--blue);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .objectives h3 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--blue);
+      margin-bottom: 0.75rem;
+    }
+
+    .objectives ul { list-style: none; padding: 0; }
+
+    .objectives ul li {
+      padding: 0.3rem 0 0.3rem 1.75rem;
+      position: relative;
+      font-size: 0.925rem;
+      color: var(--text);
+    }
+
+    .objectives ul li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    /* ══════════════════════════════════════
+       SECTION HEADINGS
+    ══════════════════════════════════════ */
+    .section-heading {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    p { margin-bottom: 1rem; color: var(--text); }
+
+    strong { color: var(--text-bright); }
+
+    code {
+      background: var(--border-soft);
+      color: var(--yellow);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+    }
+
+    /* ══════════════════════════════════════
+       CALLOUTS
+    ══════════════════════════════════════ */
+    .callout {
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      border-left: 4px solid;
+      font-size: 0.925rem;
+      line-height: 1.6;
+    }
+
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.4rem;
+    }
+
+    .callout.security { background: #1a0e0e; border-color: var(--red); }
+    .callout.security .callout-title { color: var(--red); }
+
+    .callout.tip { background: #0e1a12; border-color: var(--green); }
+    .callout.tip .callout-title { color: var(--green); }
+
+    .callout.info { background: #0d1b2e; border-color: var(--blue); }
+    .callout.info .callout-title { color: var(--blue); }
+
+    .callout.warning { background: #1a1500; border-color: var(--yellow); }
+    .callout.warning .callout-title { color: var(--yellow); }
+
+    /* ══════════════════════════════════════
+       STEP FLOW
+    ══════════════════════════════════════ */
+    .step-flow {
+      margin: 1.5rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      position: relative;
+    }
+
+    .step-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+      width: 40px;
+    }
+
+    .step-dot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #1f6feb;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      z-index: 1;
+    }
+
+    .step-dot.danger { background: #b91c1c; }
+    .step-dot.green  { background: var(--green-dark); }
+
+    .step-line {
+      width: 2px;
+      flex: 1;
+      min-height: 20px;
+      background: var(--border);
+      margin: 0 auto;
+    }
+
+    .step-body {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.9rem 1.25rem;
+      margin-bottom: 0.75rem;
+      flex: 1;
+    }
+
+    .step-body h4 {
+      font-size: 0.95rem;
+      color: var(--text-bright);
+      margin-bottom: 0.25rem;
+    }
+
+    .step-body p { font-size: 0.875rem; color: var(--text-muted); margin: 0; }
+
+    .step-body.danger { border-color: #b91c1c44; background: #1a0e0e; }
+    .step-body.green  { border-color: var(--green-dark); background: #0e1a12; }
+
+    /* ══════════════════════════════════════
+       HTTP ANATOMY
+    ══════════════════════════════════════ */
+    .http-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 1.5rem 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+    }
+
+    .http-box-title {
+      background: var(--border-soft);
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .http-box-title .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot-red    { background: #f78166; }
+    .dot-yellow { background: #e3b341; }
+    .dot-green  { background: #3fb950; }
+
+    .http-box pre {
+      padding: 1rem 1.25rem;
+      margin: 0;
+      color: var(--text);
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+
+    .http-hl-method  { color: #79c0ff; font-weight: 700; }
+    .http-hl-url     { color: var(--green); }
+    .http-hl-header  { color: var(--purple); }
+    .http-hl-value   { color: var(--yellow); }
+    .http-hl-status  { color: var(--green); font-weight: 700; }
+    .http-hl-danger  { color: var(--red); background: #1a0e0e; padding: 0 3px; border-radius: 3px; }
+    .http-hl-comment { color: var(--text-muted); font-style: italic; }
+
+    /* ══════════════════════════════════════
+       COMPARISON TABLE
+    ══════════════════════════════════════ */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.25rem 0;
+      font-size: 0.9rem;
+    }
+
+    thead tr { background: var(--border-soft); }
+    th { padding: 0.65rem 1rem; color: var(--blue); text-align: left; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid var(--border); }
+    td { padding: 0.65rem 1rem; border: 1px solid var(--border); color: var(--text); }
+    tbody tr:nth-child(even) { background: #0a0e13; }
+    tbody tr:hover { background: var(--bg-hover); }
+
+    /* ══════════════════════════════════════
+       INTERACTIVE TABS
+    ══════════════════════════════════════ */
+    .tabs {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1.5rem 0;
+    }
+
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--border-soft);
+    }
+
+    .tab-btn {
+      padding: 0.65rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s;
+    }
+
+    .tab-btn:hover { color: var(--text-bright); }
+    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    .tab-panel { display: none; padding: 1.25rem 1.5rem; }
+    .tab-panel.active { display: block; }
+
+    /* ══════════════════════════════════════
+       INTERACTIVE DEMO — URL BREAKDOWN
+    ══════════════════════════════════════ */
+    .url-demo {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .url-demo label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .url-display {
+      font-family: 'Courier New', monospace;
+      font-size: 0.95rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.65rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+    }
+
+    .url-part {
+      cursor: pointer;
+      padding: 0.1rem 0.2rem;
+      border-radius: 3px;
+      transition: background 0.15s;
+    }
+
+    .url-part:hover { opacity: 0.8; }
+    .url-part.scheme   { color: var(--purple); }
+    .url-part.domain   { color: var(--blue); }
+    .url-part.path     { color: var(--green); }
+    .url-part.query    { color: var(--yellow); }
+    .url-part.fragment { color: var(--red); }
+
+    .url-explanation {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-size: 0.875rem;
+      min-height: 60px;
+      transition: all 0.2s;
+    }
+
+    .url-explanation .exp-title {
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      font-size: 0.85rem;
+    }
+
+    .url-explanation p { margin: 0; font-size: 0.875rem; color: var(--text-muted); }
+
+    /* ══════════════════════════════════════
+       QUIZ
+    ══════════════════════════════════════ */
+    .quiz-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 2.5rem 0;
+    }
+
+    .quiz-header {
+      background: var(--border-soft);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .quiz-header h3 { font-size: 1rem; color: var(--text-bright); }
+    .quiz-header p  { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+
+    .quiz-body { padding: 1.5rem; }
+
+    .quiz-question {
+      margin-bottom: 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .quiz-question:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+
+    .quiz-q {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 1rem;
+    }
+
+    .quiz-q .q-num {
+      display: inline-block;
+      background: #1f6feb;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 22px;
+      margin-right: 0.5rem;
+    }
+
+    .quiz-options { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .quiz-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      background: var(--bg);
+      font-size: 0.9rem;
+    }
+
+    .quiz-option:hover { background: var(--bg-hover); border-color: var(--blue); }
+
+    .quiz-option input[type="radio"] { margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
+
+    .quiz-option.correct { background: #0e1a12; border-color: var(--green); color: var(--text-bright); }
+    .quiz-option.wrong   { background: #1a0e0e; border-color: var(--red);   color: var(--red); }
+    .quiz-option.disabled { pointer-events: none; opacity: 0.6; }
+    .quiz-option.correct.disabled { opacity: 1; }
+
+    .quiz-feedback {
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      display: none;
+    }
+
+    .quiz-feedback.show { display: block; }
+    .quiz-feedback.correct { background: #0e1a12; color: #3fb950; border: 1px solid var(--green-dark); }
+    .quiz-feedback.wrong   { background: #1a0e0e; color: var(--red); border: 1px solid #b91c1c; }
+
+    .quiz-score {
+      text-align: center;
+      padding: 1.5rem;
+      display: none;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .quiz-score.show { display: block; }
+    .score-number { font-size: 2.5rem; font-weight: 800; color: var(--green); }
+    .score-label  { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    .quiz-submit {
+      background: #1f6feb;
+      color: #fff;
+      border: none;
+      padding: 0.65rem 1.75rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: background 0.15s;
+    }
+
+    .quiz-submit:hover { background: #388bfd; }
+    .quiz-submit:disabled { background: var(--border); cursor: not-allowed; }
+
+    /* ══════════════════════════════════════
+       BOTTOM NAV
+    ══════════════════════════════════════ */
+    .bottom-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-soft);
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .bottom-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.5rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .btn-back {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .btn-back:hover { background: var(--bg-hover); color: var(--text-bright); }
+
+    .btn-next {
+      background: var(--green-dark);
+      border: 1px solid var(--green-dark);
+      color: #fff;
+    }
+
+    .btn-next:hover { background: var(--green); }
+
+    .complete-badge {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      background: #0e1a12;
+      border: 1px solid var(--green-dark);
+      color: var(--green);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .complete-badge.show { display: flex; }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════ */
+    @media (max-width: 640px) {
+      .page-header h1 { font-size: 1.4rem; }
+      .nav-right .nav-btn:first-child { display: none; }
+      .bottom-nav { flex-direction: column; }
+      .bottom-nav a { width: 100%; justify-content: center; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ══ NAV ══ -->
+  <nav>
+    <div class="nav-left">
+      <a href="../index.html">🛡️ Web Security</a>
+      <span class="nav-sep">›</span>
+      <a href="#">Module 1</a>
+      <span class="nav-sep">›</span>
+      <span class="nav-current">1.1 — From URL to Webpage</span>
+    </div>
+    <div class="nav-right">
+      <a class="nav-btn" href="../index.html">← Course Home</a>
+      <a class="nav-btn next" href="1-2.html">Next: HTML Structure →</a>
+    </div>
+  </nav>
+
+
+  <!-- ══ PAGE HEADER ══ -->
+  <div class="page-header">
+    <div class="module-tag">Module 1 · Sub-module 1.1</div>
+    <h1>🌐 From URL to Webpage</h1>
+    <p>Every web attack starts with a request. Before you can break something, you need to understand exactly what happens the moment a user types a URL and hits Enter.</p>
+    <div class="header-meta">
+      <span>⏱️ ~20 minutes</span>
+      <span>📖 Reading + Interactive</span>
+      <span>🧠 4-question quiz</span>
+    </div>
+  </div>
+
+
+  <!-- ══ CONTENT ══ -->
+  <div class="content">
+
+    <!-- Objectives -->
+    <div class="objectives">
+      <h3>🎯 What you will learn</h3>
+      <ul>
+        <li>What a URL is and what each part of it means</li>
+        <li>How HTTP requests and responses work</li>
+        <li>The step-by-step journey from URL to rendered page</li>
+        <li>Where in this process an attacker can interfere</li>
+      </ul>
+    </div>
+
+
+    <!-- ══ SECTION 1 ══ -->
+    <div class="section-heading">🔗 What is a URL?</div>
+
+    <p>
+      A <strong>URL (Uniform Resource Locator)</strong> is the address of a resource on the internet.
+      You use one every time you visit a website, load an image, or submit a form.
+      But a URL is not just a web address — it is a structured instruction that tells the browser
+      exactly <em>what to request</em>, <em>from where</em>, and <em>how</em>.
+    </p>
+
+    <p>
+      Every URL has distinct parts, and as a security professional you need to read them precisely —
+      because attackers hide malicious payloads inside URLs, especially in the <strong>query string</strong>.
+    </p>
+
+    <!-- Interactive URL demo -->
+    <div class="url-demo">
+      <label>🖱️ Click on any part of the URL below to learn what it does</label>
+      <div class="url-display">
+        <span class="url-part scheme"   onclick="explainPart('scheme')">https://</span><span
+              class="url-part domain"   onclick="explainPart('domain')">www.example.com</span><span
+              class="url-part path"     onclick="explainPart('path')">/search</span><span
+              class="url-part query"    onclick="explainPart('query')">?q=hello&amp;page=2</span><span
+              class="url-part fragment" onclick="explainPart('fragment')">#results</span>
+      </div>
+      <div class="url-explanation" id="urlExp">
+        <p>← Click any coloured part of the URL above to see what it means.</p>
+      </div>
+    </div>
+
+    <div class="callout security">
+      <div class="callout-title">🔐 Security Note</div>
+      The <strong>query string</strong> (the part after <code>?</code>) is the most common injection point for
+      <strong>Reflected XSS</strong>. An attacker crafts a URL with a malicious payload in the query string,
+      then tricks a victim into clicking it. The server reflects the payload back in the HTML response —
+      and the browser executes it. You will practice this in Module 3.
+    </div>
+
+
+    <!-- ══ SECTION 2 ══ -->
+    <div class="section-heading">📡 HTTP — The Language of the Web</div>
+
+    <p>
+      When your browser has parsed the URL, it sends an <strong>HTTP request</strong> to the server.
+      <strong>HTTP (HyperText Transfer Protocol)</strong> is the set of rules that governs how
+      browsers and servers communicate. Think of it as a conversation:
+      the browser asks a question (request), and the server gives an answer (response).
+    </p>
+
+    <!-- Tabs: Request / Response -->
+    <div class="tabs">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(this, 'tab-req')">📤 HTTP Request</button>
+        <button class="tab-btn"        onclick="switchTab(this, 'tab-res')">📥 HTTP Response</button>
+        <button class="tab-btn"        onclick="switchTab(this, 'tab-methods')">⚙️ GET vs POST</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-req">
+        <p style="font-size:0.9rem; margin-bottom:1rem;">
+          This is a real HTTP request. Your browser sends something like this every time you visit a page.
+        </p>
+        <div class="http-box">
+          <div class="http-box-title">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+            Browser → Server
+          </div>
+          <pre><span class="http-hl-method">GET</span> <span class="http-hl-url">/search?q=hello</span> HTTP/1.1
+<span class="http-hl-header">Host:</span>            <span class="http-hl-value">www.example.com</span>
+<span class="http-hl-header">User-Agent:</span>      <span class="http-hl-value">Mozilla/5.0 (Windows NT 10.0)</span>
+<span class="http-hl-header">Accept:</span>          <span class="http-hl-value">text/html</span>
+<span class="http-hl-header">Cookie:</span>          <span class="http-hl-danger">sessionid=abc123xyz</span>  <span class="http-hl-comment">← sent automatically with every request</span>
+<span class="http-hl-header">Referer:</span>         <span class="http-hl-value">https://www.example.com/home</span></pre>
+        </div>
+        <div class="callout security" style="margin-top:1rem;">
+          <div class="callout-title">🔐 Security Note</div>
+          Notice the <code>Cookie</code> header — the browser sends your session cookie <strong>automatically</strong>
+          with every request. This is why XSS is so dangerous: if an attacker can run JavaScript
+          in your browser, they can steal this cookie and hijack your session.
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-res">
+        <p style="font-size:0.9rem; margin-bottom:1rem;">
+          The server sends back a response containing a status code, headers, and the HTML body.
+        </p>
+        <div class="http-box">
+          <div class="http-box-title">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+            Server → Browser
+          </div>
+          <pre>HTTP/1.1 <span class="http-hl-status">200 OK</span>
+<span class="http-hl-header">Content-Type:</span>   <span class="http-hl-value">text/html; charset=UTF-8</span>
+<span class="http-hl-header">Set-Cookie:</span>     <span class="http-hl-danger">sessionid=abc123xyz; HttpOnly</span>
+<span class="http-hl-header">X-Frame-Options:</span><span class="http-hl-value"> DENY</span>
+
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;body&gt;
+    &lt;h1&gt;Results for: <span class="http-hl-danger">hello</span>&lt;/h1&gt;  <span class="http-hl-comment">← user input reflected here</span>
+  &lt;/body&gt;
+&lt;/html&gt;</pre>
+        </div>
+        <div class="callout warning" style="margin-top:1rem;">
+          <div class="callout-title">⚠️ Notice</div>
+          The search term <code>hello</code> appears directly inside the HTML response.
+          If instead of <code>hello</code> the user sent <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>
+          — and the server did not sanitize it — the browser would execute that script.
+          That is Reflected XSS in one sentence.
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-methods">
+        <p style="font-size:0.9rem; margin-bottom:1rem;">
+          The two most important HTTP methods for web security are GET and POST.
+        </p>
+        <table>
+          <thead>
+            <tr><th>Feature</th><th>GET</th><th>POST</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Where is data sent?</td><td>In the URL: <code>?name=Alice</code></td><td>In the request body (hidden)</td></tr>
+            <tr><td>Visible in browser history?</td><td>✅ Yes</td><td>❌ No</td></tr>
+            <tr><td>Visible in server logs?</td><td>✅ Yes</td><td>❌ No</td></tr>
+            <tr><td>Can be shared as a link?</td><td>✅ Yes — this is the problem</td><td>❌ No</td></tr>
+            <tr><td>Used for</td><td>Reading data, searching</td><td>Submitting forms, logging in</td></tr>
+            <tr><td>XSS risk</td><td>🚨 Higher — payload in URL</td><td>Lower — harder to share</td></tr>
+          </tbody>
+        </table>
+        <div class="callout security" style="margin-top:0.5rem;">
+          <div class="callout-title">🔐 Security Note</div>
+          GET parameters in the URL can be crafted by an attacker and sent as a link to a victim.
+          This is exactly how Reflected XSS attacks are delivered in the real world.
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══ SECTION 3 ══ -->
+    <div class="section-heading">🔄 The Full Journey — Step by Step</div>
+
+    <p>
+      Let's trace exactly what happens from the moment a user types
+      <code>https://www.example.com/search?q=hello</code> and hits Enter.
+      Each step is an opportunity — for both the developer and the attacker.
+    </p>
+
+    <div class="step-flow">
+
+      <div class="step-item">
+        <div class="step-left">
+          <div class="step-dot">1</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-body">
+          <h4>DNS Lookup</h4>
+          <p>The browser asks a DNS server: "What is the IP address of www.example.com?" It receives back an IP like <code>93.184.216.34</code>. This is like looking up a phone number in a directory.</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-left">
+          <div class="step-dot">2</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-body">
+          <h4>TCP Connection + TLS Handshake (HTTPS)</h4>
+          <p>The browser establishes a secure encrypted connection to the server. This is what the <code>https://</code> prefix means — the traffic is encrypted in transit. <code>http://</code> (without S) is unencrypted and can be intercepted.</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-left">
+          <div class="step-dot">3</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-body">
+          <h4>HTTP Request Sent</h4>
+          <p>The browser sends the GET request to the server, including the query string <code>?q=hello</code>, cookies, and headers.</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-left">
+          <div class="step-dot">4</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-body">
+          <h4>Server Processes the Request</h4>
+          <p>The server reads the query string, looks up results, and builds an HTML response. <strong>This is the critical moment</strong> — if the server inserts the user's input directly into the HTML without sanitizing it, a vulnerability is introduced.</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-left">
+          <div class="step-dot">5</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-body">
+          <h4>HTTP Response Received</h4>
+          <p>The browser receives the HTML document, CSS files, JavaScript files, and images. The status code tells the browser if everything went well (<code>200 OK</code>), if the page moved (<code>301 Redirect</code>), or if something went wrong (<code>404 Not Found</code>, <code>500 Server Error</code>).</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-left">
+          <div class="step-dot">6</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-body">
+          <h4>Browser Parses HTML → Builds the DOM</h4>
+          <p>The browser reads the HTML top to bottom and constructs a tree structure in memory called the <strong>DOM (Document Object Model)</strong>. You will learn exactly what the DOM is in Module 2.</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-left">
+          <div class="step-dot green">7</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-body green">
+          <h4>JavaScript Executes</h4>
+          <p>Any <code>&lt;script&gt;</code> tags are executed at this point. If the HTML contains malicious JavaScript injected by an attacker, <strong>it runs here</strong> — with full access to cookies, the DOM, and the user's session.</p>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-left">
+          <div class="step-dot">8</div>
+        </div>
+        <div class="step-body">
+          <h4>Page is Rendered</h4>
+          <p>The browser paints the final page on screen. The user sees the result — unaware that in step 7, malicious code may have already executed and stolen their session cookie.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">💡 The Attacker's Perspective</div>
+      An attacker does not need to break the encryption in step 2 or intercept the network in step 3.
+      They only need to inject a malicious payload in step 3 (via a crafted URL or form input),
+      have it survive step 4 unsanitized, and it will automatically execute in step 7 — in the victim's browser.
+    </div>
+
+
+    <!-- ══ SECTION 4 ══ -->
+    <div class="section-heading">📊 HTTP Status Codes You Must Know</div>
+
+    <p>Status codes are the server's way of telling the browser what happened. As a security tester, you read these constantly.</p>
+
+    <table>
+      <thead><tr><th>Code</th><th>Meaning</th><th>Security Relevance</th></tr></thead>
+      <tbody>
+        <tr><td><code>200 OK</code></td><td>Request succeeded</td><td>Normal response — check if input is reflected</td></tr>
+        <tr><td><code>301 / 302</code></td><td>Redirect</td><td>Can be abused in open redirect attacks</td></tr>
+        <tr><td><code>400</code></td><td>Bad Request</td><td>Your payload may have broken the request syntax</td></tr>
+        <tr><td><code>403 Forbidden</code></td><td>Access denied</td><td>There is a control here — try to bypass it</td></tr>
+        <tr><td><code>404 Not Found</code></td><td>Resource does not exist</td><td>Useful for mapping what exists on a server</td></tr>
+        <tr><td><code>500 Server Error</code></td><td>Something crashed on the server</td><td>🚨 Your input may have caused an error — interesting</td></tr>
+      </tbody>
+    </table>
+
+
+    <!-- ══ QUIZ ══ -->
+    <div class="quiz-section">
+      <div class="quiz-header">
+        <div>
+          <h3>🧠 Knowledge Check</h3>
+          <p>4 questions · Select your answer and click Check</p>
+        </div>
+      </div>
+      <div class="quiz-body">
+
+        <!-- Q1 -->
+        <div class="quiz-question" id="q1">
+          <div class="quiz-q"><span class="q-num">1</span> A user visits <code>https://shop.no/search?q=boots</code>. Where in this URL would an attacker most likely inject an XSS payload?</div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q1" value="a"> The <code>https://</code> scheme</label>
+            <label class="quiz-option"><input type="radio" name="q1" value="b"> The domain <code>shop.no</code></label>
+            <label class="quiz-option"><input type="radio" name="q1" value="c"> The query string <code>?q=boots</code></label>
+            <label class="quiz-option"><input type="radio" name="q1" value="d"> The path <code>/search</code></label>
+          </div>
+          <div class="quiz-feedback" id="fb1"></div>
+          <button class="quiz-submit" onclick="checkAnswer(1, 'c', 'Correct! The query string is user-controlled input that is sent to the server and often reflected back in the HTML response — making it the primary Reflected XSS injection point.', 'Not quite. The query string (?q=boots) is the part that contains user-controlled data. It is sent to the server and often reflected in the response without sanitization.')">Check Answer</button>
+        </div>
+
+        <!-- Q2 -->
+        <div class="quiz-question" id="q2">
+          <div class="quiz-q"><span class="q-num">2</span> Why is a GET request more dangerous than a POST request for delivering an XSS attack?</div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q2" value="a"> GET requests are not encrypted</label>
+            <label class="quiz-option"><input type="radio" name="q2" value="b"> GET parameters appear in the URL and can be crafted into a link and sent to a victim</label>
+            <label class="quiz-option"><input type="radio" name="q2" value="c"> GET requests do not include cookies</label>
+            <label class="quiz-option"><input type="radio" name="q2" value="d"> GET requests bypass firewalls</label>
+          </div>
+          <div class="quiz-feedback" id="fb2"></div>
+          <button class="quiz-submit" onclick="checkAnswer(2, 'b', 'Correct! Because GET parameters are in the URL, an attacker can craft a malicious link like https://site.com/?q=&lt;script&gt;...&lt;/script&gt; and send it to a victim via email or chat. One click and the payload executes.', 'Not quite. The key issue is that GET parameters are in the URL itself, so an attacker can craft a malicious link and trick a victim into clicking it.')">Check Answer</button>
+        </div>
+
+        <!-- Q3 -->
+        <div class="quiz-question" id="q3">
+          <div class="quiz-q"><span class="q-num">3</span> A server responds with HTTP status code <code>500</code> when you submit a certain input. As a penetration tester, what does this tell you?</div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q3" value="a"> The server blocked your attack</label>
+            <label class="quiz-option"><input type="radio" name="q3" value="b"> Your input likely caused an error on the server — worth investigating further</label>
+            <label class="quiz-option"><input type="radio" name="q3" value="c"> The page does not exist</label>
+            <label class="quiz-option"><input type="radio" name="q3" value="d"> You need to be logged in</label>
+          </div>
+          <div class="quiz-feedback" id="fb3"></div>
+          <button class="quiz-submit" onclick="checkAnswer(3, 'b', 'Correct! A 500 error means your input caused an unhandled exception on the server. This is a strong signal that the input is not being handled safely — it may indicate injection vulnerabilities worth exploring.', 'Not quite. A 500 Internal Server Error means your input triggered a crash or unhandled exception on the server side — a valuable finding during a penetration test.')">Check Answer</button>
+        </div>
+
+        <!-- Q4 -->
+        <div class="quiz-question" id="q4">
+          <div class="quiz-q"><span class="q-num">4</span> At which step in the browser rendering process does a malicious XSS script actually execute?</div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q4" value="a"> When the browser sends the HTTP request</label>
+            <label class="quiz-option"><input type="radio" name="q4" value="b"> When the server processes the input</label>
+            <label class="quiz-option"><input type="radio" name="q4" value="c"> When the browser parses HTML and executes JavaScript</label>
+            <label class="quiz-option"><input type="radio" name="q4" value="d"> When the DNS lookup happens</label>
+          </div>
+          <div class="quiz-feedback" id="fb4"></div>
+          <button class="quiz-submit" onclick="checkAnswer(4, 'c', 'Correct! The malicious script executes in the victim\'s browser when JavaScript runs during page rendering — after the HTML has been parsed. The attacker\'s code runs with the same privileges as the legitimate site.', 'Not quite. The script executes client-side — in the victim\'s browser — when JavaScript is executed during the HTML parsing and rendering phase.')">Check Answer</button>
+        </div>
+
+      </div>
+
+      <!-- Score -->
+      <div class="quiz-score" id="quizScore">
+        <div class="score-number" id="scoreNum"></div>
+        <div class="score-label" id="scoreLabel"></div>
+      </div>
+    </div>
+
+
+    <!-- ══ BOTTOM NAV ══ -->
+    <div class="bottom-nav">
+      <a class="btn-back" href="../index.html">← Course Home</a>
+      <div class="complete-badge" id="completeBadge">✅ Sub-module complete</div>
+      <a class="btn-next" href="1-2.html">Next: 1.2 HTML Structure →</a>
+    </div>
+
+  </div><!-- /content -->
+
+
+  <!-- ══ JAVASCRIPT ══ -->
+  <script>
+
+    // ── URL Part Explainer ──
+    const urlParts = {
+      scheme: {
+        title: '🟣 Scheme — https://',
+        text:  'Tells the browser which protocol to use. HTTPS means the connection is encrypted using TLS. HTTP (without S) is unencrypted — anyone on the same network can read it. Always look for HTTPS, especially on login pages.'
+      },
+      domain: {
+        title: '🔵 Domain — www.example.com',
+        text:  'The human-readable address of the server. The browser asks a DNS server to convert this into an IP address. Attackers use lookalike domains (e.g. "examp1e.com") in phishing attacks to trick users.'
+      },
+      path: {
+        title: '🟢 Path — /search',
+        text:  'Identifies the specific resource or page on the server. Like a file path on a computer. Security testers map all paths to understand the attack surface of an application.'
+      },
+      query: {
+        title: '🟡 Query String — ?q=hello&page=2',
+        text:  'Key-value pairs of user-controlled data sent to the server. This is the most common XSS injection point. Everything after "?" is attacker-controllable. In a Reflected XSS attack, the malicious payload goes here.'
+      },
+      fragment: {
+        title: '🔴 Fragment — #results',
+        text:  'Processed entirely by the browser — never sent to the server. Used to scroll to a section of the page. Relevant in DOM-based XSS attacks where JavaScript reads the fragment and inserts it into the page without sanitization.'
+      }
+    };
+
+    function explainPart(part) {
+      const data = urlParts[part];
+      document.getElementById('urlExp').innerHTML =
+        `<div class="exp-title" style="color:var(--text-bright)">${data.title}</div><p>${data.text}</p>`;
+    }
+
+    // ── Tabs ──
+    function switchTab(btn, panelId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(panelId).classList.add('active');
+    }
+
+    // ── Quiz ──
+    let answered = {};
+
+    function checkAnswer(qNum, correct, feedbackCorrect, feedbackWrong) {
+      if (answered[qNum]) return;
+
+      const selected = document.querySelector(`input[name="q${qNum}"]:checked`);
+      if (!selected) { alert('Please select an answer first.'); return; }
+
+      answered[qNum] = true;
+      const isCorrect = selected.value === correct;
+      const fb = document.getElementById(`fb${qNum}`);
+
+      // Style all options
+      document.querySelectorAll(`input[name="q${qNum}"]`).forEach(input => {
+        const label = input.closest('.quiz-option');
+        label.classList.add('disabled');
+        if (input.value === correct) label.classList.add('correct');
+        else if (input.checked)      label.classList.add('wrong');
+      });
+
+      // Show feedback
+      fb.textContent = isCorrect ? '✅ ' + feedbackCorrect : '❌ ' + feedbackWrong;
+      fb.className = `quiz-feedback show ${isCorrect ? 'correct' : 'wrong'}`;
+
+      // Disable submit button
+      document.querySelectorAll(`#q${qNum} .quiz-submit`)[0].disabled = true;
+
+      // Check if all answered
+      if (Object.keys(answered).length === 4) showScore();
+    }
+
+    function showScore() {
+      const correct = Object.keys(answered).filter(q => {
+        const sel = document.querySelector(`input[name="q${q}"]:checked`);
+        return sel && ['c','b','b','c'][parseInt(q)-1] === sel.value;
+      }).length;
+
+      const score = document.getElementById('quizScore');
+      document.getElementById('scoreNum').textContent = `${correct} / 4`;
+      document.getElementById('scoreLabel').textContent =
+        correct === 4 ? '🎉 Perfect score! You are ready for Sub-module 1.2.' :
+        correct >= 3  ? '👍 Good work! Review the questions you missed before moving on.' :
+                        '📖 Review the section above and try again.';
+      score.classList.add('show');
+
+      // Mark as visited in localStorage
+      markVisited('1-1');
+      document.getElementById('completeBadge').classList.add('show');
+    }
+
+    function markVisited(id) {
+      let visited = JSON.parse(localStorage.getItem('wsec_visited') || '[]');
+      if (!visited.includes(id)) {
+        visited.push(id);
+        localStorage.setItem('wsec_visited', JSON.stringify(visited));
+      }
+    }
+
+    // Mark visited when page loads (even without quiz)
+    window.addEventListener('load', () => {
+      markVisited('1-1');
+    });
+
+  </script>
+
+</body>
+</html>
