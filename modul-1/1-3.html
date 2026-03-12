@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>1.3 — Forms & User Input · Web Security</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0d1117; --bg-card:#161b22; --bg-hover:#1c2333;
+      --border:#30363d; --border-soft:#21262d;
+      --text:#c9d1d9; --text-muted:#8b949e; --text-bright:#e6edf3;
+      --blue:#58a6ff; --green:#3fb950; --green-dark:#238636;
+      --red:#f78166; --yellow:#e3b341; --purple:#bc8cff;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.75; font-size:16px; }
+    a { color:var(--blue); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+
+    /* NAV */
+    nav { background:var(--bg-card); border-bottom:1px solid var(--border); padding:0 2rem; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+    .nav-left { display:flex; align-items:center; gap:0.5rem; font-size:0.875rem; color:var(--text-muted); }
+    .nav-left a { color:var(--text-muted); }
+    .nav-left a:hover { color:var(--blue); text-decoration:none; }
+    .nav-sep { color:var(--border); }
+    .nav-current { color:var(--text-bright); font-weight:600; }
+    .nav-right { display:flex; gap:0.5rem; }
+    .nav-btn { background:var(--bg-hover); border:1px solid var(--border); color:var(--text-muted); padding:0.3rem 0.9rem; border-radius:6px; font-size:0.8rem; text-decoration:none; transition:background 0.15s,color 0.15s; }
+    .nav-btn:hover { background:var(--border); color:var(--text-bright); text-decoration:none; }
+    .nav-btn.next { background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+    .nav-btn.next:hover { background:var(--green); }
+
+    /* HEADER */
+    .page-header { background:linear-gradient(160deg,#0d1f35 0%,#0d1117 70%); border-bottom:1px solid var(--border); padding:2.5rem 2rem 2rem; max-width:860px; margin:0 auto; }
+    .module-tag { display:inline-block; background:#1f2d3d; border:1px solid #1f6feb55; color:var(--blue); font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; padding:0.25rem 0.75rem; border-radius:20px; margin-bottom:0.75rem; }
+    .page-header h1 { font-size:1.9rem; font-weight:800; color:var(--text-bright); margin-bottom:0.5rem; }
+    .page-header p { color:var(--text-muted); font-size:1rem; max-width:600px; }
+    .header-meta { display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap; }
+    .header-meta span { font-size:0.8rem; color:var(--text-muted); background:var(--bg-card); border:1px solid var(--border-soft); padding:0.2rem 0.75rem; border-radius:20px; }
+
+    /* CONTENT */
+    .content { max-width:860px; margin:0 auto; padding:2rem 2rem 4rem; }
+    .section-heading { font-size:1.2rem; font-weight:700; color:var(--text-bright); margin:2.5rem 0 1rem; padding-bottom:0.4rem; border-bottom:1px solid var(--border-soft); display:flex; align-items:center; gap:0.5rem; }
+    p { margin-bottom:1rem; }
+    strong { color:var(--text-bright); }
+    code { background:var(--border-soft); color:var(--yellow); padding:0.15rem 0.45rem; border-radius:4px; font-family:'Courier New',monospace; font-size:0.875rem; }
+
+    /* OBJECTIVES */
+    .objectives { background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--blue); border-radius:8px; padding:1.25rem 1.5rem; margin-bottom:2.5rem; }
+    .objectives h3 { font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--blue); margin-bottom:0.75rem; }
+    .objectives ul { list-style:none; padding:0; }
+    .objectives ul li { padding:0.3rem 0 0.3rem 1.75rem; position:relative; font-size:0.925rem; }
+    .objectives ul li::before { content:"✓"; position:absolute; left:0; color:var(--green); font-weight:700; }
+
+    /* CALLOUTS */
+    .callout { border-radius:8px; padding:1rem 1.25rem; margin:1.5rem 0; border-left:4px solid; font-size:0.925rem; line-height:1.6; }
+    .callout-title { font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.4rem; }
+    .callout.security { background:#1a0e0e; border-color:var(--red); }
+    .callout.security .callout-title { color:var(--red); }
+    .callout.tip { background:#0e1a12; border-color:var(--green); }
+    .callout.tip .callout-title { color:var(--green); }
+    .callout.info { background:#0d1b2e; border-color:var(--blue); }
+    .callout.info .callout-title { color:var(--blue); }
+    .callout.warning { background:#1a1500; border-color:var(--yellow); }
+    .callout.warning .callout-title { color:var(--yellow); }
+
+    /* TABLE */
+    table { width:100%; border-collapse:collapse; margin:1.25rem 0; font-size:0.9rem; }
+    thead tr { background:var(--border-soft); }
+    th { padding:0.65rem 1rem; color:var(--blue); text-align:left; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.06em; border:1px solid var(--border); }
+    td { padding:0.65rem 1rem; border:1px solid var(--border); color:var(--text); vertical-align:top; }
+    tbody tr:nth-child(even) { background:#0a0e13; }
+    tbody tr:hover { background:var(--bg-hover); }
+
+    /* EDITOR */
+    .editor-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1.5rem 0; }
+    .editor-toolbar { background:var(--border-soft); padding:0.6rem 1rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
+    .editor-toolbar-left { display:flex; align-items:center; gap:0.75rem; }
+    .editor-dots { display:flex; gap:5px; }
+    .editor-dots span { width:12px; height:12px; border-radius:50%; display:block; }
+    .ed-r{background:#f78166;} .ed-y{background:#e3b341;} .ed-g{background:#3fb950;}
+    .editor-title { font-size:0.8rem; color:var(--text-muted); font-family:'Courier New',monospace; }
+    .editor-btns { display:flex; gap:0.5rem; }
+    .ed-btn { font-size:0.8rem; font-weight:600; padding:0.3rem 0.9rem; border-radius:6px; cursor:pointer; border:1px solid var(--border); transition:background 0.15s; }
+    .ed-btn-run { background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+    .ed-btn-run:hover { background:var(--green); }
+    .ed-btn-reset { background:var(--bg-hover); color:var(--text-muted); }
+    .ed-btn-reset:hover { background:var(--border); color:var(--text-bright); }
+    .editor-panes { display:grid; grid-template-columns:1fr 1fr; }
+    .editor-code { width:100%; background:#0d1117; color:var(--text); border:none; outline:none; padding:1rem 1.25rem; font-family:'Courier New',monospace; font-size:0.875rem; line-height:1.6; resize:none; border-right:1px solid var(--border); min-height:200px; tab-size:2; }
+    .editor-preview { background:#fff; border:none; width:100%; min-height:200px; }
+    .editor-label { background:var(--border-soft); padding:0.3rem 1rem; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; display:flex; justify-content:space-between; }
+    @media(max-width:640px){ .editor-panes{grid-template-columns:1fr;} .editor-code{border-right:none;border-bottom:1px solid var(--border);} }
+
+    /* REQUEST VISUALIZER */
+    .req-vis { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1.5rem 0; }
+    .req-vis-tabs { display:flex; background:var(--border-soft); border-bottom:1px solid var(--border); }
+    .req-tab { padding:0.65rem 1.25rem; font-size:0.85rem; font-weight:600; color:var(--text-muted); cursor:pointer; border:none; background:transparent; border-bottom:2px solid transparent; transition:color 0.15s; }
+    .req-tab:hover { color:var(--text-bright); }
+    .req-tab.active { color:var(--blue); border-bottom-color:var(--blue); }
+    .req-panel { display:none; padding:1.25rem 1.5rem; }
+    .req-panel.active { display:block; }
+    .http-block { background:var(--bg); border:1px solid var(--border); border-radius:6px; font-family:'Courier New',monospace; font-size:0.83rem; line-height:1.9; overflow-x:auto; }
+    .http-title { background:var(--border-soft); padding:0.4rem 1rem; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; display:flex; gap:6px; align-items:center; }
+    .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .dr{background:#f78166;} .dy{background:#e3b341;} .dg{background:#3fb950;}
+    .http-body { padding:1rem 1.25rem; }
+    .hl-method { color:#79c0ff; font-weight:700; }
+    .hl-url    { color:var(--green); }
+    .hl-header { color:var(--purple); }
+    .hl-value  { color:var(--yellow); }
+    .hl-danger { color:var(--red); background:#1a0e0e; padding:0 3px; border-radius:3px; }
+    .hl-ok     { color:var(--green); font-weight:700; }
+    .hl-note   { color:var(--text-muted); font-style:italic; }
+
+    /* INTERACTIVE FORM BUILDER */
+    .form-builder { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1.5rem 0; }
+    .form-builder-header { background:var(--border-soft); padding:0.75rem 1.25rem; font-size:0.85rem; color:var(--text-muted); }
+    .form-builder-body { display:grid; grid-template-columns:1fr 1fr; }
+    .form-config { padding:1.25rem; border-right:1px solid var(--border); }
+    .form-config label { display:block; font-size:0.8rem; color:var(--text-muted); margin-bottom:0.3rem; text-transform:uppercase; letter-spacing:0.05em; }
+    .form-config select, .form-config input[type=text] { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:0.5rem 0.75rem; border-radius:6px; font-size:0.875rem; margin-bottom:1rem; outline:none; font-family:'Segoe UI',sans-serif; }
+    .form-config select:focus, .form-config input[type=text]:focus { border-color:var(--blue); }
+    .form-output { padding:1.25rem; background:var(--bg); }
+    .form-output-label { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.5rem; }
+    .form-output pre { font-family:'Courier New',monospace; font-size:0.8rem; color:var(--text); line-height:1.7; white-space:pre-wrap; word-break:break-all; }
+    @media(max-width:640px){ .form-builder-body{grid-template-columns:1fr;} .form-config{border-right:none;border-bottom:1px solid var(--border);} }
+
+    /* DATA FLOW DIAGRAM */
+    .flow-diagram { margin:1.5rem 0; }
+    .flow-row { display:flex; align-items:stretch; gap:0; margin-bottom:0; }
+    .flow-box { flex:1; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:0.9rem 1rem; font-size:0.85rem; }
+    .flow-box h4 { font-size:0.85rem; color:var(--text-bright); margin-bottom:0.3rem; }
+    .flow-box p  { font-size:0.8rem; color:var(--text-muted); margin:0; }
+    .flow-box.danger { border-color:#b91c1c55; background:#1a0e0e; }
+    .flow-box.danger h4 { color:var(--red); }
+    .flow-box.safe { border-color:var(--green-dark); background:#0e1a12; }
+    .flow-box.safe h4 { color:var(--green); }
+    .flow-arrow { display:flex; align-items:center; justify-content:center; padding:0 0.75rem; font-size:1.3rem; color:var(--text-muted); flex-shrink:0; }
+    .flow-col { display:flex; flex-direction:column; gap:0.75rem; }
+    .flow-down { text-align:center; font-size:1.2rem; color:var(--text-muted); padding:0.3rem; }
+
+    /* QUIZ */
+    .quiz-section { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:2.5rem 0; }
+    .quiz-header { background:var(--border-soft); padding:1rem 1.5rem; }
+    .quiz-header h3 { font-size:1rem; color:var(--text-bright); }
+    .quiz-header p  { font-size:0.8rem; color:var(--text-muted); margin:0; }
+    .quiz-body { padding:1.5rem; }
+    .quiz-question { margin-bottom:2rem; padding-bottom:2rem; border-bottom:1px solid var(--border-soft); }
+    .quiz-question:last-child { margin-bottom:0; padding-bottom:0; border-bottom:none; }
+    .quiz-q { font-size:0.95rem; font-weight:600; color:var(--text-bright); margin-bottom:1rem; }
+    .quiz-q .q-num { display:inline-block; background:#1f6feb; color:#fff; font-size:0.75rem; font-weight:700; width:22px; height:22px; border-radius:50%; text-align:center; line-height:22px; margin-right:0.5rem; }
+    .quiz-options { display:flex; flex-direction:column; gap:0.5rem; }
+    .quiz-option { display:flex; align-items:flex-start; gap:0.75rem; padding:0.75rem 1rem; border:1px solid var(--border); border-radius:8px; cursor:pointer; transition:background 0.15s,border-color 0.15s; background:var(--bg); font-size:0.9rem; }
+    .quiz-option:hover { background:var(--bg-hover); border-color:var(--blue); }
+    .quiz-option input[type="radio"] { margin-top:2px; accent-color:var(--blue); flex-shrink:0; }
+    .quiz-option.correct { background:#0e1a12; border-color:var(--green); color:var(--text-bright); }
+    .quiz-option.wrong   { background:#1a0e0e; border-color:var(--red); color:var(--red); }
+    .quiz-option.disabled { pointer-events:none; opacity:0.6; }
+    .quiz-option.correct.disabled { opacity:1; }
+    .quiz-feedback { margin-top:0.75rem; padding:0.75rem 1rem; border-radius:6px; font-size:0.875rem; display:none; }
+    .quiz-feedback.show { display:block; }
+    .quiz-feedback.correct { background:#0e1a12; color:var(--green); border:1px solid var(--green-dark); }
+    .quiz-feedback.wrong   { background:#1a0e0e; color:var(--red); border:1px solid #b91c1c; }
+    .quiz-submit { background:#1f6feb; color:#fff; border:none; padding:0.65rem 1.75rem; border-radius:8px; font-size:0.9rem; font-weight:600; cursor:pointer; margin-top:1rem; transition:background 0.15s; }
+    .quiz-submit:hover { background:#388bfd; }
+    .quiz-submit:disabled { background:var(--border); cursor:not-allowed; }
+    .quiz-score { text-align:center; padding:1.5rem; display:none; border-top:1px solid var(--border-soft); }
+    .quiz-score.show { display:block; }
+    .score-number { font-size:2.5rem; font-weight:800; color:var(--green); }
+    .score-label  { font-size:0.9rem; color:var(--text-muted); margin-top:0.25rem; }
+
+    /* BOTTOM NAV */
+    .bottom-nav { display:flex; justify-content:space-between; align-items:center; margin-top:3rem; padding-top:2rem; border-top:1px solid var(--border-soft); gap:1rem; flex-wrap:wrap; }
+    .bottom-nav a { display:inline-flex; align-items:center; gap:0.5rem; padding:0.65rem 1.5rem; border-radius:8px; font-size:0.9rem; font-weight:600; text-decoration:none; transition:background 0.15s; }
+    .btn-back { background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); }
+    .btn-back:hover { background:var(--bg-hover); color:var(--text-bright); }
+    .btn-next { background:var(--green-dark); border:1px solid var(--green-dark); color:#fff; }
+    .btn-next:hover { background:var(--green); }
+    .complete-badge { display:none; align-items:center; gap:0.5rem; background:#0e1a12; border:1px solid var(--green-dark); color:var(--green); padding:0.5rem 1rem; border-radius:8px; font-size:0.85rem; font-weight:600; }
+    .complete-badge.show { display:flex; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-left">
+      <a href="../index.html">🛡️ Web Security</a>
+      <span class="nav-sep">›</span>
+      <a href="#">Module 1</a>
+      <span class="nav-sep">›</span>
+      <span class="nav-current">1.3 — Forms &amp; User Input</span>
+    </div>
+    <div class="nav-right">
+      <a class="nav-btn" href="1-2.html">← 1.2 HTML Structure</a>
+      <a class="nav-btn next" href="1-4-lab.html">Next: Mini-Lab →</a>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="module-tag">Module 1 · Sub-module 1.3</div>
+    <h1>📝 Forms &amp; User Input</h1>
+    <p>Forms are how users talk to web applications. They are also the primary way attackers send malicious data. Understanding exactly how forms work — and where data goes — is essential before you can test for XSS.</p>
+    <div class="header-meta">
+      <span>⏱️ ~25 minutes</span>
+      <span>📖 Reading + Interactive</span>
+      <span>⚡ Live code editor</span>
+      <span>🧠 4-question quiz</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="objectives">
+      <h3>🎯 What you will learn</h3>
+      <ul>
+        <li>How HTML forms work and how data is sent to a server</li>
+        <li>The difference between GET and POST — and why it matters for attacks</li>
+        <li>Every important input type and its security implications</li>
+        <li>How "hidden" fields and client-side controls can be bypassed</li>
+        <li>How to trace user input from browser to server to response</li>
+      </ul>
+    </div>
+
+
+    <!-- ══ SECTION 1 ══ -->
+    <div class="section-heading">📋 What is an HTML Form?</div>
+
+    <p>
+      An HTML form is a section of a webpage that collects information from the user
+      and sends it to a server. Every time you log in, search for something, post a comment,
+      or fill out a registration — you are using an HTML form.
+    </p>
+    <p>
+      From an attacker's perspective, <strong>every form is an input channel</strong> — a place
+      where attacker-controlled data enters the application. Identifying and probing forms
+      is one of the first steps in any web application penetration test.
+    </p>
+
+    <div class="callout info">
+      <div class="callout-title">ℹ️ The attacker's first question</div>
+      When a penetration tester opens a web application, the first question is:
+      <strong>"Where can I send data in?"</strong> Forms are the most visible answer.
+      But as you will learn later, data also enters via URL parameters, cookies, HTTP headers,
+      and JavaScript — all of which are equally valid injection points.
+    </div>
+
+    <!-- Live editor: basic form -->
+    <div class="editor-wrap">
+      <div class="editor-toolbar">
+        <div class="editor-toolbar-left">
+          <div class="editor-dots"><span class="ed-r"></span><span class="ed-y"></span><span class="ed-g"></span></div>
+          <span class="editor-title">basic-form.html</span>
+        </div>
+        <div class="editor-btns">
+          <button class="ed-btn ed-btn-reset" onclick="resetEd('ed1')">Reset</button>
+          <button class="ed-btn ed-btn-run"   onclick="runEd('ed1')">▶ Run</button>
+        </div>
+      </div>
+      <div class="editor-label"><span>✏️ Edit and run — try changing the method to GET and observe the URL</span><span>Preview →</span></div>
+      <div class="editor-panes">
+        <textarea class="editor-code" id="ed1" spellcheck="false"><!DOCTYPE html>
+<html>
+<body style="font-family:sans-serif; padding:1rem">
+
+  <h2>Search</h2>
+
+  <!-- Try changing method="POST" to method="GET" -->
+  <form action="/search" method="POST">
+
+    <label for="q">Search term:</label><br>
+    <input type="text" id="q" name="q"
+           placeholder="Enter search term"><br><br>
+
+    <label for="category">Category:</label><br>
+    <select id="category" name="category">
+      <option value="all">All</option>
+      <option value="news">News</option>
+      <option value="products">Products</option>
+    </select><br><br>
+
+    <button type="submit">Search</button>
+  </form>
+
+</body>
+</html></textarea>
+        <iframe class="editor-preview" id="ed1-preview"></iframe>
+      </div>
+    </div>
+
+    <p>Let's break down the key attributes of a form:</p>
+
+    <table>
+      <thead><tr><th>Attribute</th><th>What it does</th><th>Security significance</th></tr></thead>
+      <tbody>
+        <tr><td><code>action="/search"</code></td><td>Where the form data is sent</td><td>The server endpoint receiving your payload — the target</td></tr>
+        <tr><td><code>method="GET"</code></td><td>Data sent in the URL</td><td>🚨 Payload visible in URL, shareable as a link — Reflected XSS vector</td></tr>
+        <tr><td><code>method="POST"</code></td><td>Data sent in request body</td><td>Not in URL, but still injectable — use Burp Suite to intercept</td></tr>
+        <tr><td><code>name="q"</code></td><td>The parameter name sent to server</td><td>This is what you target: <code>?q=&lt;script&gt;...&lt;/script&gt;</code></td></tr>
+        <tr><td><code>enctype</code></td><td>How data is encoded</td><td>Affects how payloads are transmitted — relevant for file upload attacks</td></tr>
+      </tbody>
+    </table>
+
+
+    <!-- ══ SECTION 2 — GET vs POST ══ -->
+    <div class="section-heading">⚙️ GET vs POST — An Attacker's Perspective</div>
+
+    <p>
+      The HTTP method determines <strong>where</strong> the form data travels when submitted.
+      This is one of the most important distinctions in web security.
+    </p>
+
+    <!-- Request visualizer tabs -->
+    <div class="req-vis">
+      <div class="req-vis-tabs">
+        <button class="req-tab active" onclick="switchReqTab(this,'rt-get')">📤 GET Request</button>
+        <button class="req-tab"        onclick="switchReqTab(this,'rt-post')">📤 POST Request</button>
+        <button class="req-tab"        onclick="switchReqTab(this,'rt-burp')">🕵️ Intercepted in Burp</button>
+      </div>
+
+      <div class="req-panel active" id="rt-get">
+        <p style="font-size:0.9rem;margin-bottom:1rem;">When method is <code>GET</code>, the form data is appended to the URL as a query string:</p>
+        <div class="http-block">
+          <div class="http-title"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span> Browser → Server (GET)</div>
+          <div class="http-body">
+<span class="hl-method">GET</span> <span class="hl-url">/search?q=boots&amp;category=products</span> HTTP/1.1<br>
+<span class="hl-header">Host:</span> <span class="hl-value">shop.example.com</span><br>
+<span class="hl-header">Cookie:</span> <span class="hl-danger">sessionid=abc123</span> <span class="hl-note">← sent automatically</span>
+          </div>
+        </div>
+        <div class="callout security" style="margin-top:1rem;">
+          <div class="callout-title">🔐 Why GET is dangerous for XSS delivery</div>
+          The query string <code>?q=boots</code> is part of the URL. An attacker can replace <code>boots</code>
+          with <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>, craft a link, and email it to a victim.
+          One click — the payload is in the URL, the server reflects it back in the HTML, and it executes.
+          This is a <strong>Reflected XSS attack delivered via GET parameter</strong>.
+        </div>
+      </div>
+
+      <div class="req-panel" id="rt-post">
+        <p style="font-size:0.9rem;margin-bottom:1rem;">When method is <code>POST</code>, the form data is in the request <strong>body</strong> — not the URL:</p>
+        <div class="http-block">
+          <div class="http-title"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span> Browser → Server (POST)</div>
+          <div class="http-body">
+<span class="hl-method">POST</span> <span class="hl-url">/search</span> HTTP/1.1<br>
+<span class="hl-header">Host:</span>         <span class="hl-value">shop.example.com</span><br>
+<span class="hl-header">Content-Type:</span> <span class="hl-value">application/x-www-form-urlencoded</span><br>
+<span class="hl-header">Cookie:</span>       <span class="hl-danger">sessionid=abc123</span><br>
+<br>
+<span class="hl-danger">q=boots&amp;category=products</span> <span class="hl-note">← body, not URL</span>
+          </div>
+        </div>
+        <div class="callout warning" style="margin-top:1rem;">
+          <div class="callout-title">⚠️ POST is harder to share — but not safe</div>
+          POST data is not in the URL, so an attacker cannot simply send a link.
+          However, POST requests can still carry XSS payloads — an attacker uses
+          a crafted HTML page that auto-submits a POST form when the victim visits it.
+          POST also does not protect against <strong>Stored XSS</strong>:
+          if the POST data is saved to a database and later displayed to users, the attack still works.
+        </div>
+      </div>
+
+      <div class="req-panel" id="rt-burp">
+        <p style="font-size:0.9rem;margin-bottom:1rem;">In Burp Suite (which you will use in Module 4), you intercept the request between browser and server and modify it before it is sent:</p>
+        <div class="http-block">
+          <div class="http-title"><span class="dot dr"></span><span class="dot dy"></span><span class="dot dg"></span> Burp Suite Intercepted Request — before sending to server</div>
+          <div class="http-body">
+<span class="hl-method">POST</span> <span class="hl-url">/search</span> HTTP/1.1<br>
+<span class="hl-header">Host:</span>         <span class="hl-value">shop.example.com</span><br>
+<span class="hl-header">Content-Type:</span> <span class="hl-value">application/x-www-form-urlencoded</span><br>
+<span class="hl-header">Cookie:</span>       <span class="hl-danger">sessionid=abc123</span><br>
+<br>
+<span class="hl-note"># You change "boots" to your XSS payload:</span><br>
+<span class="hl-danger">q=&lt;img src=x onerror=alert(document.cookie)&gt;&amp;category=products</span>
+          </div>
+        </div>
+        <div class="callout tip" style="margin-top:1rem;">
+          <div class="callout-title">💡 Why Burp Suite is essential</div>
+          With Burp, you can intercept <em>any</em> request — GET or POST — and modify
+          every parameter, header, and cookie before it reaches the server.
+          This is how professional penetration testers test for XSS and other injection vulnerabilities.
+          You will use Burp in Module 4.
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══ SECTION 3 — Input Types ══ -->
+    <div class="section-heading">🔡 Input Types and Their Security Implications</div>
+
+    <p>
+      HTML forms support many input types beyond plain text.
+      Each one has different behaviour — and some create false assumptions about security.
+    </p>
+
+    <!-- Interactive form builder -->
+    <div class="form-builder">
+      <div class="form-builder-header">
+        🛠️ Form Builder — select an input type to see its HTML and security notes
+      </div>
+      <div class="form-builder-body">
+        <div class="form-config">
+          <label>Input type</label>
+          <select id="inputTypeSelect" onchange="updateFormBuilder()">
+            <option value="text">text</option>
+            <option value="password">password</option>
+            <option value="hidden">hidden</option>
+            <option value="email">email</option>
+            <option value="number">number</option>
+            <option value="file">file</option>
+            <option value="textarea">textarea</option>
+            <option value="select">select (dropdown)</option>
+          </select>
+          <label>Field name</label>
+          <input type="text" id="fieldName" value="username" oninput="updateFormBuilder()">
+          <label>Default value</label>
+          <input type="text" id="fieldValue" value="" placeholder="optional" oninput="updateFormBuilder()">
+        </div>
+        <div class="form-output">
+          <div class="form-output-label">Generated HTML</div>
+          <pre id="formBuilderOut"></pre>
+        </div>
+      </div>
+      <div id="formBuilderNote" style="padding:1rem 1.25rem; border-top:1px solid var(--border); font-size:0.875rem; background:var(--bg);"></div>
+    </div>
+
+    <table>
+      <thead><tr><th>Input type</th><th>Browser behaviour</th><th>Security note</th></tr></thead>
+      <tbody>
+        <tr><td><code>type="text"</code></td><td>Free text input</td><td>No restriction — primary injection target</td></tr>
+        <tr><td><code>type="password"</code></td><td>Masked characters</td><td>Only masks visually — sent as plain text unless HTTPS</td></tr>
+        <tr><td><code>type="hidden"</code></td><td>Invisible to user</td><td>🚨 Easily modified — never trust for security logic</td></tr>
+        <tr><td><code>type="email"</code></td><td>Validates email format</td><td>Client-side only — bypassed by modifying the request</td></tr>
+        <tr><td><code>type="number"</code></td><td>Numeric input</td><td>Client-side only — bypassed in Burp, send any string</td></tr>
+        <tr><td><code>type="file"</code></td><td>File upload</td><td>File type restrictions are client-side — attackers upload anything</td></tr>
+        <tr><td><code>&lt;textarea&gt;</code></td><td>Multi-line text</td><td>Common in comment/message fields — classic Stored XSS target</td></tr>
+        <tr><td><code>&lt;select&gt;</code></td><td>Dropdown options</td><td>🚨 Options are client-side — attacker sends any value via Burp</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout security">
+      <div class="callout-title">🔐 The most important rule in web security</div>
+      <strong>Client-side controls are not security controls.</strong>
+      Every validation, every restriction, every dropdown limit you see in a browser
+      can be bypassed by modifying the request directly — using Burp Suite, curl, or even
+      browser DevTools. The only real security happens on the <strong>server side</strong>.
+    </div>
+
+
+    <!-- ══ SECTION 4 — Hidden Fields ══ -->
+    <div class="section-heading">👻 Hidden Fields — The Illusion of Security</div>
+
+    <p>
+      Hidden input fields (<code>&lt;input type="hidden"&gt;</code>) are widely used by developers
+      to pass data between pages without showing it to the user. A common (and dangerous) pattern
+      is to use them to pass security-relevant values like user roles, prices, or session tokens.
+    </p>
+
+    <div class="editor-wrap">
+      <div class="editor-toolbar">
+        <div class="editor-toolbar-left">
+          <div class="editor-dots"><span class="ed-r"></span><span class="ed-y"></span><span class="ed-g"></span></div>
+          <span class="editor-title">hidden-fields-demo.html</span>
+        </div>
+        <div class="editor-btns">
+          <button class="ed-btn ed-btn-reset" onclick="resetEd('ed2')">Reset</button>
+          <button class="ed-btn ed-btn-run"   onclick="runEd('ed2')">▶ Run</button>
+        </div>
+      </div>
+      <div class="editor-label"><span>✏️ Run the code — then open browser DevTools (F12) and try editing the hidden field</span><span>Preview →</span></div>
+      <div class="editor-panes">
+        <textarea class="editor-code" id="ed2" spellcheck="false"><!DOCTYPE html>
+<html>
+<body style="font-family:sans-serif; padding:1rem">
+
+  <h2>🛒 Checkout</h2>
+
+  <form action="/purchase" method="POST">
+
+    <p>Product: <strong>Security Course</strong></p>
+
+    <!-- Developer hid the price here — BAD practice -->
+    <input type="hidden" name="price"  value="99.00">
+    <input type="hidden" name="role"   value="user">
+    <input type="hidden" name="itemId" value="SKU-4421">
+
+    <label>Card number:</label><br>
+    <input type="text" name="card"
+           placeholder="1234 5678 9012 3456"><br><br>
+
+    <button type="submit">Pay $99.00</button>
+
+  </form>
+
+  <p style="color:#888; font-size:0.85rem; margin-top:1rem">
+    💡 Tip: In your browser, right-click → Inspect Element
+    and find the hidden price field. Try changing value="99.00"
+    to value="0.01" — the form will submit with the new price.
+  </p>
+
+</body>
+</html></textarea>
+        <iframe class="editor-preview" id="ed2-preview"></iframe>
+      </div>
+    </div>
+
+    <div class="callout security">
+      <div class="callout-title">🔐 Real-world impact of hidden field manipulation</div>
+      In real penetration tests, hidden field manipulation has been used to:
+      <br>• Change product prices to £0.01 before checkout
+      <br>• Escalate user roles from <code>role=user</code> to <code>role=admin</code>
+      <br>• Bypass discount limits by modifying discount codes
+      <br>• Inject XSS payloads into fields the developer never thought would be tampered with
+    </div>
+
+
+    <!-- ══ SECTION 5 — Data Flow ══ -->
+    <div class="section-heading">🔄 Tracing Data: From Browser to Server to Response</div>
+
+    <p>
+      The most important skill for finding XSS vulnerabilities is being able to
+      <strong>trace where user input travels</strong> through the application.
+      The questions to always ask are: "Where did I send this data?" and "Where does it come back?"
+    </p>
+
+    <div class="flow-diagram">
+      <div class="flow-col">
+
+        <div class="flow-box">
+          <h4>① User types input into a form field</h4>
+          <p>Example: user types <code>&lt;script&gt;alert(1)&lt;/script&gt;</code> into a search box</p>
+        </div>
+        <div class="flow-down">↓</div>
+
+        <div class="flow-box">
+          <h4>② Browser sends HTTP request</h4>
+          <p>GET: <code>/search?q=&lt;script&gt;alert(1)&lt;/script&gt;</code><br>
+             POST: payload in request body — intercept with Burp</p>
+        </div>
+        <div class="flow-down">↓</div>
+
+        <div class="flow-box">
+          <h4>③ Server receives and processes the input</h4>
+          <p>Server reads <code>q</code> parameter, searches the database, prepares an HTML response</p>
+        </div>
+        <div class="flow-down">↓</div>
+
+        <div class="flow-box danger">
+          <h4>④ ⚠️ Server inserts input into HTML without sanitizing</h4>
+          <p>Response HTML: <code>&lt;p&gt;Results for: &lt;script&gt;alert(1)&lt;/script&gt;&lt;/p&gt;</code></p>
+        </div>
+        <div class="flow-down">↓</div>
+
+        <div class="flow-box danger">
+          <h4>⑤ 🚨 Browser renders response — script executes</h4>
+          <p>The browser sees a <code>&lt;script&gt;</code> tag, executes it. Full XSS achieved.
+          Attacker can now steal cookies, hijack session, or deface the page.</p>
+        </div>
+        <div class="flow-down">↓</div>
+
+        <div class="flow-box safe">
+          <h4>✅ What should happen: Server sanitizes the input</h4>
+          <p>Response HTML: <code>&lt;p&gt;Results for: &amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;&lt;/p&gt;</code><br>
+          Browser renders it as harmless text — the script never executes.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">💡 Your testing checklist for any form field</div>
+      1. What <strong>HTTP method</strong> does the form use? (GET or POST)<br>
+      2. What is the <strong>action URL</strong>? (Where does data go?)<br>
+      3. Are there any <strong>hidden fields</strong>? (What are their names and values?)<br>
+      4. Does the server <strong>reflect the input</strong> anywhere in the response?<br>
+      5. Is the reflected input <strong>inside a tag, inside an attribute, or inside JavaScript</strong>?
+    </div>
+
+
+    <!-- ══ SECTION 6 — Live Trace Demo ══ -->
+    <div class="section-heading">🔬 Live Trace: Follow Your Input</div>
+
+    <p>
+      Type something below and watch it travel through the request, into the "server response",
+      and back onto the page. Try a normal word first — then try an HTML tag.
+    </p>
+
+    <div class="editor-wrap">
+      <div class="editor-toolbar">
+        <div class="editor-toolbar-left">
+          <div class="editor-dots"><span class="ed-r"></span><span class="ed-y"></span><span class="ed-g"></span></div>
+          <span class="editor-title">input-trace-demo</span>
+        </div>
+        <div class="editor-btns">
+          <button class="ed-btn ed-btn-reset" onclick="resetTrace()">Reset</button>
+          <button class="ed-btn ed-btn-run"   onclick="runTrace()">▶ Submit</button>
+        </div>
+      </div>
+
+      <div style="padding:1rem 1.25rem; background:var(--bg); border-bottom:1px solid var(--border);">
+        <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.5rem;">
+          Search form (method GET):
+        </label>
+        <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="traceInput" placeholder="Type your search term..."
+            style="flex:1;min-width:200px;background:var(--bg-card);border:1px solid var(--border);
+                   color:var(--text);padding:0.6rem 0.9rem;border-radius:6px;
+                   font-family:'Courier New',monospace;font-size:0.9rem;outline:none;">
+          <button class="ed-btn ed-btn-reset" onclick="setTrace('hello')">Normal text</button>
+          <button class="ed-btn ed-btn-reset" onclick="setTrace('<b>bold</b>')">HTML tag</button>
+          <button class="ed-btn ed-btn-reset" onclick="setTrace('<img src=x onerror=alert(1)>')">XSS payload</button>
+        </div>
+      </div>
+
+      <!-- Step 1: URL -->
+      <div style="padding:0.75rem 1.25rem;background:var(--bg);border-bottom:1px solid var(--border);">
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.06em;">① GET Request URL</div>
+        <code id="traceURL" style="color:var(--green);font-size:0.85rem;">/search?q=<span style="color:var(--red)">[your input]</span></code>
+      </div>
+
+      <!-- Step 2: Server response source -->
+      <div style="padding:0.75rem 1.25rem;background:var(--bg);border-bottom:1px solid var(--border);">
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.06em;">② Server Response HTML (unsanitized)</div>
+        <pre id="traceSource" style="font-family:'Courier New',monospace;font-size:0.82rem;color:var(--text);margin:0;">&lt;h2&gt;Results for: <span style="color:var(--red)">[your input]</span>&lt;/h2&gt;</pre>
+      </div>
+
+      <!-- Step 3: Rendered -->
+      <div style="padding:0.5rem 1.25rem 0;background:var(--border-soft);">
+        <span style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">③ Browser renders (sandboxed):</span>
+      </div>
+      <iframe id="traceRender" sandbox="allow-scripts"
+        style="width:100%;border:none;min-height:60px;background:#fff;display:block;"
+        srcdoc="<html><body style='font-family:sans-serif;padding:10px;color:#999;font-style:italic;font-size:1rem;margin:0'>[submit to see result]</body></html>">
+      </iframe>
+
+      <!-- Step 4: Verdict -->
+      <div id="traceVerdict" style="display:none;padding:0.75rem 1.25rem;font-size:0.875rem;border-top:1px solid var(--border);"></div>
+    </div>
+
+
+    <!-- QUIZ -->
+    <div class="quiz-section">
+      <div class="quiz-header">
+        <h3>🧠 Knowledge Check</h3>
+        <p>4 questions · Select your answer and click Check</p>
+      </div>
+      <div class="quiz-body">
+
+        <div class="quiz-question" id="q1">
+          <div class="quiz-q"><span class="q-num">1</span>
+            A login form uses <code>method="POST"</code>. A developer claims this makes it safe from XSS because "the payload is not in the URL." Why is this incorrect?
+          </div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q1" value="a"> POST requests cannot carry XSS payloads at all</label>
+            <label class="quiz-option"><input type="radio" name="q1" value="b"> POST data can still be intercepted and modified with Burp Suite, and if the server reflects it back unsanitized, XSS still executes</label>
+            <label class="quiz-option"><input type="radio" name="q1" value="c"> POST requests are encrypted so attackers cannot read them</label>
+            <label class="quiz-option"><input type="radio" name="q1" value="d"> POST requests do not include cookies, so session theft is impossible</label>
+          </div>
+          <div class="quiz-feedback" id="fb1"></div>
+          <button class="quiz-submit" onclick="checkQ(1,'b','Correct! POST only means the data is in the request body instead of the URL. Burp Suite intercepts and modifies the body just as easily. If the server reflects the data unsanitized, XSS works regardless of HTTP method.','Not quite. POST does not prevent XSS. An attacker intercepts the POST request with Burp Suite, modifies the body to include a payload, and forwards it. If the server reflects it without sanitizing, XSS executes.')">Check Answer</button>
+        </div>
+
+        <div class="quiz-question" id="q2">
+          <div class="quiz-q"><span class="q-num">2</span>
+            A checkout form has <code>&lt;input type="hidden" name="price" value="199.00"&gt;</code>. Why is this a security risk?
+          </div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q2" value="a"> Hidden fields are encrypted so they cannot be changed</label>
+            <label class="quiz-option"><input type="radio" name="q2" value="b"> Hidden fields are invisible to users but can be modified using browser DevTools or Burp Suite before submission</label>
+            <label class="quiz-option"><input type="radio" name="q2" value="c"> Hidden fields are only a risk if the form uses GET method</label>
+            <label class="quiz-option"><input type="radio" name="q2" value="d"> Hidden fields do not get sent in the HTTP request</label>
+          </div>
+          <div class="quiz-feedback" id="fb2"></div>
+          <button class="quiz-submit" onclick="checkQ(2,'b','Correct! Hidden fields are only hidden visually. They exist in the HTML source and are sent in the request like any other field. An attacker right-clicks → Inspect, edits the value, and submits — changing the price to £0.01.','Not quite. Hidden fields are visible in the HTML source and can be edited with browser DevTools (F12 → Inspector) or intercepted with Burp Suite. They are never a security control.')">Check Answer</button>
+        </div>
+
+        <div class="quiz-question" id="q3">
+          <div class="quiz-q"><span class="q-num">3</span>
+            A form has <code>&lt;input type="number" name="quantity"&gt;</code>. A developer says this prevents injection because the browser only allows numbers. What is wrong with this assumption?
+          </div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q3" value="a"> Number inputs also accept letters in all browsers</label>
+            <label class="quiz-option"><input type="radio" name="q3" value="b"> Client-side validation can be bypassed by sending the request directly — the server must always validate input independently</label>
+            <label class="quiz-option"><input type="radio" name="q3" value="c"> Number inputs are immune to XSS by design</label>
+            <label class="quiz-option"><input type="radio" name="q3" value="d"> This is correct — number inputs are a valid security control</label>
+          </div>
+          <div class="quiz-feedback" id="fb3"></div>
+          <button class="quiz-submit" onclick="checkQ(3,'b','Correct! Client-side controls only affect the browser UI. Using Burp Suite or curl, you bypass the browser entirely and send any string you want in the quantity field. The server must validate on its own.','Not quite. The key principle is: client-side controls are not security controls. An attacker bypasses the browser using Burp Suite and sends any value they want directly to the server.')">Check Answer</button>
+        </div>
+
+        <div class="quiz-question" id="q4">
+          <div class="quiz-q"><span class="q-num">4</span>
+            You are testing a web application. You submit the value <code>&lt;b&gt;test&lt;/b&gt;</code> into a search field. The page shows the word <strong>test</strong> in bold. What does this tell you?
+          </div>
+          <div class="quiz-options">
+            <label class="quiz-option"><input type="radio" name="q4" value="a"> The application is safe from XSS</label>
+            <label class="quiz-option"><input type="radio" name="q4" value="b"> The application is only vulnerable to bold text attacks</label>
+            <label class="quiz-option"><input type="radio" name="q4" value="c"> The application reflects your input as raw HTML — it is likely vulnerable to XSS and you should test with a script payload next</label>
+            <label class="quiz-option"><input type="radio" name="q4" value="d"> The application sanitizes input correctly</label>
+          </div>
+          <div class="quiz-feedback" id="fb4"></div>
+          <button class="quiz-submit" onclick="checkQ(4,'c','Correct! If the browser renders your HTML tag as actual HTML (bold text), it means the application is inserting your input directly into the page without encoding it. This is HTML injection — the next step is to test a JavaScript payload like &lt;script&gt;alert(1)&lt;/script&gt;.','Not quite. Seeing bold text means the browser interpreted your HTML tag as real HTML. The application is not encoding your input. This is HTML injection — a strong indicator of XSS vulnerability.')">Check Answer</button>
+        </div>
+
+      </div>
+      <div class="quiz-score" id="quizScore">
+        <div class="score-number" id="scoreNum"></div>
+        <div class="score-label"  id="scoreLabel"></div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <a class="btn-back" href="1-2.html">← 1.2 HTML Structure</a>
+      <div class="complete-badge" id="completeBadge">✅ Sub-module complete</div>
+      <a class="btn-next" href="1-4-lab.html">Next: 1.4 Mini-Lab →</a>
+    </div>
+
+  </div>
+
+  <script>
+
+    // ── Editors ──
+    const defaults = {
+      ed1: document.getElementById('ed1').value,
+      ed2: document.getElementById('ed2').value
+    };
+    function runEd(id) { document.getElementById(id+'-preview').srcdoc = document.getElementById(id).value; }
+    function resetEd(id) { document.getElementById(id).value = defaults[id]; runEd(id); }
+    window.addEventListener('load', () => { runEd('ed1'); runEd('ed2'); });
+
+    // ── Request Tabs ──
+    function switchReqTab(btn, panelId) {
+      document.querySelectorAll('.req-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.req-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(panelId).classList.add('active');
+    }
+
+    // ── Form Builder ──
+    const inputNotes = {
+      text:     { note:'⚠️ Free text — no restriction. Primary XSS injection point. Always the first thing to test.', html: (n,v) => `<input type="text" name="${n}"${v?' value="'+v+'"':''} placeholder="Enter ${n}">` },
+      password: { note:'ℹ️ Masked visually but sent as plain text. Without HTTPS the password travels unencrypted over the network.', html: (n,v) => `<input type="password" name="${n}"${v?' value="'+v+'"':''}>` },
+      hidden:   { note:'🚨 HIGH RISK: Invisible to the user but visible in HTML source. Trivially modified with browser DevTools or Burp. Never use for security-critical values.', html: (n,v) => `<input type="hidden" name="${n}" value="${v||'secret-value'}">` },
+      email:    { note:'⚠️ Client-side format validation only. Completely bypassed when modifying the request in Burp. Server must validate independently.', html: (n,v) => `<input type="email" name="${n}"${v?' value="'+v+'"':''} placeholder="user@example.com">` },
+      number:   { note:'⚠️ Only restricts browser UI. Send any string via Burp — the server receives it unchanged. Never rely on this for security.', html: (n,v) => `<input type="number" name="${n}"${v?' value="'+v+'"':''} min="1" max="100">` },
+      file:     { note:'🚨 File type restrictions (accept=".pdf") are client-side only. Attackers upload PHP shells, HTML files, or malicious SVGs by bypassing the browser restriction.', html: (n,v) => `<input type="file" name="${n}" accept=".pdf,.jpg">` },
+      textarea: { note:'🚨 Multi-line free text. Classic Stored XSS target — found in comment boxes, message fields, bio sections. Usually has more character space for payloads.', html: (n,v) => `<textarea name="${n}" rows="4" placeholder="Enter ${n}">${v||''}</textarea>` },
+      select:   { note:'🚨 Dropdown options appear fixed but are fully attacker-controlled. Send any value via Burp — not just the listed options. Never validate server-side based on dropdown contents alone.', html: (n,v) => `<select name="${n}">\n  <option value="option1">Option 1</option>\n  <option value="option2">Option 2</option>\n  <option value="${v||'custom'}">Custom value</option>\n</select>` }
+    };
+
+    function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function updateFormBuilder() {
+      const type = document.getElementById('inputTypeSelect').value;
+      const name = document.getElementById('fieldName').value || 'fieldname';
+      const val  = document.getElementById('fieldValue').value;
+      const data = inputNotes[type];
+      const html = data.html(name, val);
+      document.getElementById('formBuilderOut').innerHTML = escHtml(html);
+      const noteEl = document.getElementById('formBuilderNote');
+      const isHigh = data.note.startsWith('🚨');
+      const isMed  = data.note.startsWith('⚠️');
+      noteEl.style.background    = isHigh ? '#1a0e0e' : isMed ? '#1a1500' : '#0d1b2e';
+      noteEl.style.borderTop     = `1px solid ${isHigh ? '#b91c1c' : isMed ? '#b08800' : '#1f6feb'}`;
+      noteEl.style.color         = isHigh ? '#ffa198' : isMed ? '#f0c674' : '#aff2c0';
+      noteEl.textContent         = data.note;
+    }
+
+    window.addEventListener('load', updateFormBuilder);
+
+    // ── Input Trace Demo ──
+    function escHtmlStr(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function setTrace(val) {
+      document.getElementById('traceInput').value = val;
+      runTrace();
+    }
+
+    function runTrace() {
+      const raw = document.getElementById('traceInput').value;
+      if (!raw) return;
+      const encoded = encodeURIComponent(raw);
+      const escaped = escHtmlStr(raw);
+      const hasTag  = /<[^>]+>/.test(raw);
+      const hasScript = /script|onerror|onload|alert|javascript/i.test(raw);
+
+      // Step 1: URL
+      document.getElementById('traceURL').innerHTML =
+        `/search?q=<span style="color:var(--red)">${escHtmlStr(encoded)}</span>`;
+
+      // Step 2: Source
+      document.getElementById('traceSource').innerHTML =
+        `&lt;h2&gt;Results for: <span style="color:var(--red)">${escaped}</span>&lt;/h2&gt;`;
+
+      // Step 3: Render (sandboxed iframe)
+      document.getElementById('traceRender').srcdoc =
+        `<html><body style="font-family:sans-serif;padding:10px;margin:0;font-size:1rem;color:#111">
+          <h2 style="font-size:1.2rem">Results for: ${raw}</h2>
+        </body></html>`;
+
+      // Step 4: Verdict
+      const v = document.getElementById('traceVerdict');
+      v.style.display = 'block';
+      if (hasScript) {
+        v.style.background = '#1a0e0e'; v.style.borderTop = '1px solid #b91c1c'; v.style.color = '#ffa198';
+        v.innerHTML = '🚨 <strong>XSS payload detected!</strong> The server reflected your input as raw HTML. A JavaScript payload like this would execute in the victim\'s browser — this application is vulnerable to Reflected XSS.';
+      } else if (hasTag) {
+        v.style.background = '#1a1500'; v.style.borderTop = '1px solid #b08800'; v.style.color = '#f0c674';
+        v.innerHTML = '⚠️ <strong>HTML injection confirmed.</strong> Your HTML tag was rendered by the browser. The application is not encoding output. Next step: test a JavaScript payload to confirm XSS.';
+      } else {
+        v.style.background = '#0e1a12'; v.style.borderTop = '1px solid #238636'; v.style.color = '#aff2c0';
+        v.innerHTML = '✅ <strong>Plain text submitted.</strong> The server reflected your text. Now try an HTML tag to test if injection is possible.';
+      }
+    }
+
+    function resetTrace() {
+      document.getElementById('traceInput').value = '';
+      document.getElementById('traceURL').innerHTML = `/search?q=<span style="color:var(--red)">[your input]</span>`;
+      document.getElementById('traceSource').innerHTML = `&lt;h2&gt;Results for: <span style="color:var(--red)">[your input]</span>&lt;/h2&gt;`;
+      document.getElementById('traceRender').srcdoc = `<html><body style="font-family:sans-serif;padding:10px;color:#999;font-style:italic;font-size:1rem;margin:0">[submit to see result]</body></html>`;
+      document.getElementById('traceVerdict').style.display = 'none';
+    }
+
+    // ── Quiz ──
+    let answered = {};
+    const correct = { 1:'b', 2:'b', 3:'b', 4:'c' };
+
+    function checkQ(qNum, ans, fbOk, fbNo) {
+      if (answered[qNum]) return;
+      const sel = document.querySelector(`input[name="q${qNum}"]:checked`);
+      if (!sel) { alert('Please select an answer first.'); return; }
+      answered[qNum] = true;
+      const ok = sel.value === ans;
+      document.querySelectorAll(`input[name="q${qNum}"]`).forEach(i => {
+        const l = i.closest('.quiz-option');
+        l.classList.add('disabled');
+        if (i.value === ans) l.classList.add('correct');
+        else if (i.checked)  l.classList.add('wrong');
+      });
+      const fb = document.getElementById(`fb${qNum}`);
+      fb.textContent = ok ? '✅ '+fbOk : '❌ '+fbNo;
+      fb.className = `quiz-feedback show ${ok?'correct':'wrong'}`;
+      document.querySelectorAll(`#q${qNum} .quiz-submit`)[0].disabled = true;
+      if (Object.keys(answered).length === 4) showScore();
+    }
+
+    function showScore() {
+      let c = 0;
+      for (let q in correct) {
+        const s = document.querySelector(`input[name="q${q}"]:checked`);
+        if (s && s.value === correct[q]) c++;
+      }
+      document.getElementById('scoreNum').textContent  = `${c} / 4`;
+      document.getElementById('scoreLabel').textContent =
+        c===4 ? '🎉 Perfect! You are ready for the Mini-Lab.' :
+        c>=3  ? '👍 Good — review what you missed.' :
+                '📖 Review this section before the lab.';
+      document.getElementById('quizScore').classList.add('show');
+      markVisited('1-3');
+      document.getElementById('completeBadge').classList.add('show');
+    }
+
+    function markVisited(id) {
+      let v = JSON.parse(localStorage.getItem('wsec_visited')||'[]');
+      if (!v.includes(id)) { v.push(id); localStorage.setItem('wsec_visited', JSON.stringify(v)); }
+    }
+
+    window.addEventListener('load', () => markVisited('1-3'));
+  </script>
+</body>
+</html>
