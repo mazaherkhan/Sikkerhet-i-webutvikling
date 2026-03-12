@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>1.4 — Mini-Lab: Guestbook · Web Security</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0d1117; --bg-card:#161b22; --bg-hover:#1c2333;
+      --border:#30363d; --border-soft:#21262d;
+      --text:#c9d1d9; --text-muted:#8b949e; --text-bright:#e6edf3;
+      --blue:#58a6ff; --green:#3fb950; --green-dark:#238636;
+      --red:#f78166; --yellow:#e3b341; --purple:#bc8cff;
+    }
+    html { scroll-behavior:smooth; }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.75; font-size:16px; }
+    a { color:var(--blue); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    code { background:var(--border-soft); color:var(--yellow); padding:0.15rem 0.45rem; border-radius:4px; font-family:'Courier New',monospace; font-size:0.875rem; }
+    p { margin-bottom:1rem; }
+    strong { color:var(--text-bright); }
+
+    /* NAV */
+    nav { background:var(--bg-card); border-bottom:1px solid var(--border); padding:0 2rem; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+    .nav-left { display:flex; align-items:center; gap:0.5rem; font-size:0.875rem; color:var(--text-muted); }
+    .nav-left a { color:var(--text-muted); }
+    .nav-left a:hover { color:var(--blue); text-decoration:none; }
+    .nav-sep { color:var(--border); }
+    .nav-current { color:var(--text-bright); font-weight:600; }
+    .nav-right { display:flex; gap:0.5rem; }
+    .nav-btn { background:var(--bg-hover); border:1px solid var(--border); color:var(--text-muted); padding:0.3rem 0.9rem; border-radius:6px; font-size:0.8rem; text-decoration:none; transition:background 0.15s; }
+    .nav-btn:hover { background:var(--border); color:var(--text-bright); text-decoration:none; }
+    .nav-btn.next { background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+    .nav-btn.next:hover { background:var(--green); }
+
+    /* HEADER */
+    .page-header { background:linear-gradient(160deg,#1a0a2e 0%,#0d1117 70%); border-bottom:1px solid var(--border); padding:2.5rem 2rem 2rem; max-width:960px; margin:0 auto; }
+    .lab-tag { display:inline-block; background:#2d1f4a; border:1px solid #7c3aed55; color:var(--purple); font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; padding:0.25rem 0.75rem; border-radius:20px; margin-bottom:0.75rem; }
+    .page-header h1 { font-size:1.9rem; font-weight:800; color:var(--text-bright); margin-bottom:0.5rem; }
+    .page-header p { color:var(--text-muted); font-size:1rem; max-width:650px; }
+    .header-meta { display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap; }
+    .header-meta span { font-size:0.8rem; color:var(--text-muted); background:var(--bg-card); border:1px solid var(--border-soft); padding:0.2rem 0.75rem; border-radius:20px; }
+
+    /* LAYOUT */
+    .lab-layout { max-width:960px; margin:0 auto; padding:2rem 2rem 4rem; display:grid; grid-template-columns:240px 1fr; gap:2rem; align-items:start; }
+    @media(max-width:760px){ .lab-layout{grid-template-columns:1fr;} }
+
+    /* SIDEBAR */
+    .sidebar { position:sticky; top:68px; }
+    .task-list { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .task-list-header { background:var(--border-soft); padding:0.75rem 1rem; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); }
+    .task-item { display:flex; align-items:center; gap:0.75rem; padding:0.75rem 1rem; border-bottom:1px solid var(--border-soft); font-size:0.85rem; color:var(--text-muted); cursor:pointer; transition:background 0.15s; text-decoration:none; }
+    .task-item:last-child { border-bottom:none; }
+    .task-item:hover { background:var(--bg-hover); color:var(--text-bright); text-decoration:none; }
+    .task-item.active { background:var(--bg-hover); color:var(--text-bright); border-left:3px solid var(--purple); }
+    .task-item.done { color:var(--green); }
+    .task-item.done .task-icon { color:var(--green); }
+    .task-icon { font-size:1rem; flex-shrink:0; width:20px; text-align:center; }
+    .progress-bar-wrap { padding:1rem; border-top:1px solid var(--border); }
+    .progress-label { font-size:0.78rem; color:var(--text-muted); display:flex; justify-content:space-between; margin-bottom:0.4rem; }
+    .progress-bar { height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+    .progress-fill { height:100%; background:var(--green); border-radius:3px; transition:width 0.4s; }
+
+    /* MAIN CONTENT */
+    .main { min-width:0; }
+    .section-heading { font-size:1.15rem; font-weight:700; color:var(--text-bright); margin:2.5rem 0 1rem; padding-bottom:0.4rem; border-bottom:1px solid var(--border-soft); display:flex; align-items:center; gap:0.5rem; }
+    .section-heading:first-child { margin-top:0; }
+
+    /* CALLOUTS */
+    .callout { border-radius:8px; padding:1rem 1.25rem; margin:1.25rem 0; border-left:4px solid; font-size:0.925rem; line-height:1.6; }
+    .callout-title { font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.4rem; }
+    .callout.security { background:#1a0e0e; border-color:var(--red); }
+    .callout.security .callout-title { color:var(--red); }
+    .callout.tip { background:#0e1a12; border-color:var(--green); }
+    .callout.tip .callout-title { color:var(--green); }
+    .callout.info { background:#0d1b2e; border-color:var(--blue); }
+    .callout.info .callout-title { color:var(--blue); }
+    .callout.warning { background:#1a1500; border-color:var(--yellow); }
+    .callout.warning .callout-title { color:var(--yellow); }
+    .callout.lab { background:#1e1228; border-color:var(--purple); }
+    .callout.lab .callout-title { color:var(--purple); }
+
+    /* TASK CARDS */
+    .task-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1.5rem 0; }
+    .task-card-header { padding:1rem 1.25rem; display:flex; align-items:center; gap:0.75rem; border-bottom:1px solid var(--border); }
+    .task-num { background:#7c3aed; color:#fff; font-size:0.75rem; font-weight:800; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .task-num.done-num { background:var(--green-dark); }
+    .task-title { font-size:1rem; font-weight:700; color:var(--text-bright); }
+    .task-status { margin-left:auto; font-size:0.8rem; color:var(--text-muted); background:var(--bg); border:1px solid var(--border); padding:0.2rem 0.6rem; border-radius:20px; }
+    .task-status.complete { background:#0e1a12; color:var(--green); border-color:var(--green-dark); }
+    .task-body { padding:1.25rem 1.5rem; }
+
+    /* EDITOR */
+    .editor-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1rem 0; }
+    .editor-toolbar { background:var(--border-soft); padding:0.6rem 1rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
+    .editor-toolbar-left { display:flex; align-items:center; gap:0.75rem; }
+    .editor-dots { display:flex; gap:5px; }
+    .editor-dots span { width:12px; height:12px; border-radius:50%; display:block; }
+    .dr{background:#f78166;} .dy{background:#e3b341;} .dg{background:#3fb950;}
+    .editor-title { font-size:0.8rem; color:var(--text-muted); font-family:'Courier New',monospace; }
+    .editor-btns { display:flex; gap:0.5rem; }
+    .ed-btn { font-size:0.8rem; font-weight:600; padding:0.3rem 0.9rem; border-radius:6px; cursor:pointer; border:1px solid var(--border); transition:background 0.15s; }
+    .ed-btn-run { background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+    .ed-btn-run:hover { background:var(--green); }
+    .ed-btn-reset { background:var(--bg-hover); color:var(--text-muted); }
+    .ed-btn-reset:hover { background:var(--border); color:var(--text-bright); }
+    .ed-btn-hint { background:#2d1f4a; color:var(--purple); border-color:#7c3aed55; }
+    .ed-btn-hint:hover { background:#3d2560; }
+    .editor-code { width:100%; background:#0d1117; color:var(--text); border:none; outline:none; padding:1rem 1.25rem; font-family:'Courier New',monospace; font-size:0.875rem; line-height:1.6; resize:none; min-height:120px; tab-size:2; display:block; }
+    .editor-panes { display:grid; grid-template-columns:1fr 1fr; }
+    .editor-panes .editor-code { border-right:1px solid var(--border); }
+    .editor-preview { background:#fff; border:none; width:100%; min-height:200px; }
+    .editor-label { background:var(--border-soft); padding:0.3rem 1rem; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; display:flex; justify-content:space-between; }
+    @media(max-width:600px){ .editor-panes{grid-template-columns:1fr;} .editor-panes .editor-code{border-right:none;border-bottom:1px solid var(--border);} }
+
+    /* HINT BOX */
+    .hint-box { background:#1e1228; border:1px solid #7c3aed55; border-radius:8px; padding:1rem 1.25rem; margin:0.75rem 0; display:none; font-size:0.875rem; color:var(--text); }
+    .hint-box.show { display:block; }
+    .hint-box pre { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:0.75rem 1rem; font-size:0.8rem; margin-top:0.5rem; overflow-x:auto; }
+
+    /* GUESTBOOK SIMULATION */
+    .guestbook-sim { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1.25rem 0; }
+    .gb-topbar { background:var(--border-soft); padding:0.65rem 1.25rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
+    .gb-topbar-left { display:flex; align-items:center; gap:0.75rem; }
+    .gb-title { font-size:0.85rem; color:var(--text-bright); font-weight:600; }
+    .gb-mode-toggle { display:flex; gap:0.5rem; align-items:center; font-size:0.8rem; color:var(--text-muted); }
+    .mode-btn { font-size:0.75rem; padding:0.25rem 0.75rem; border-radius:20px; cursor:pointer; border:1px solid var(--border); background:var(--bg); color:var(--text-muted); transition:all 0.15s; }
+    .mode-btn.active-vuln { background:#1a0e0e; color:var(--red); border-color:#b91c1c55; }
+    .mode-btn.active-safe { background:#0e1a12; color:var(--green); border-color:var(--green-dark); }
+    .gb-inner { display:grid; grid-template-columns:1fr 1fr; }
+    @media(max-width:600px){ .gb-inner{grid-template-columns:1fr;} }
+    .gb-form-pane { padding:1.25rem; border-right:1px solid var(--border); }
+    .gb-form-pane h4 { font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.06em; }
+    .gb-field { display:block; width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:0.55rem 0.75rem; border-radius:6px; font-size:0.875rem; margin-bottom:0.75rem; outline:none; font-family:'Segoe UI',sans-serif; }
+    .gb-field:focus { border-color:var(--blue); }
+    textarea.gb-field { min-height:80px; resize:vertical; font-family:'Segoe UI',sans-serif; }
+    .gb-submit { background:var(--green-dark); color:#fff; border:none; padding:0.55rem 1.25rem; border-radius:6px; font-size:0.875rem; font-weight:600; cursor:pointer; transition:background 0.15s; }
+    .gb-submit:hover { background:var(--green); }
+    .gb-entries-pane { padding:1.25rem; background:var(--bg); }
+    .gb-entries-pane h4 { font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem; text-transform:uppercase; letter-spacing:0.06em; }
+    .gb-entry { background:var(--bg-card); border:1px solid var(--border); border-radius:6px; padding:0.75rem 1rem; margin-bottom:0.6rem; font-size:0.875rem; }
+    .gb-entry-author { font-weight:700; color:var(--blue); font-size:0.8rem; margin-bottom:0.3rem; }
+    .gb-entry-msg { color:var(--text); }
+    .gb-empty { color:var(--text-muted); font-style:italic; font-size:0.875rem; }
+    .gb-source-pane { padding:1rem 1.25rem; border-top:1px solid var(--border); background:var(--bg); }
+    .gb-source-label { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.4rem; }
+    .gb-source-code { font-family:'Courier New',monospace; font-size:0.78rem; color:var(--text); white-space:pre-wrap; word-break:break-all; line-height:1.7; }
+    .mode-badge { display:inline-block; font-size:0.72rem; font-weight:700; padding:0.2rem 0.7rem; border-radius:20px; }
+    .mode-badge.vuln { background:#b91c1c33; color:var(--red); border:1px solid #b91c1c55; }
+    .mode-badge.safe { background:#1a7f3733; color:var(--green); border:1px solid #1a7f3755; }
+
+    /* VERIFICATION */
+    .verify-row { display:flex; align-items:center; gap:0.75rem; padding:0.75rem 1rem; border:1px solid var(--border); border-radius:8px; margin:0.5rem 0; background:var(--bg); font-size:0.875rem; }
+    .verify-icon { font-size:1.2rem; flex-shrink:0; }
+    .verify-text { flex:1; color:var(--text-muted); }
+    .verify-badge { font-size:0.75rem; padding:0.2rem 0.6rem; border-radius:20px; flex-shrink:0; }
+    .vb-pass { background:#0e1a12; color:var(--green); border:1px solid var(--green-dark); }
+    .vb-fail { background:#1a0e0e; color:var(--red); border:1px solid #b91c1c; }
+    .vb-pending { background:var(--bg-card); color:var(--text-muted); border:1px solid var(--border); }
+
+    /* TABLE */
+    table { width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.875rem; }
+    thead tr { background:var(--border-soft); }
+    th { padding:0.6rem 0.9rem; color:var(--blue); text-align:left; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; border:1px solid var(--border); }
+    td { padding:0.6rem 0.9rem; border:1px solid var(--border); color:var(--text); vertical-align:top; }
+    tbody tr:nth-child(even) { background:#0a0e13; }
+
+    /* REFLECTION */
+    .reflection { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:1.5rem; margin:1.5rem 0; }
+    .reflection h3 { font-size:1rem; font-weight:700; color:var(--text-bright); margin-bottom:1rem; }
+    .reflection-q { font-size:0.9rem; color:var(--text); margin-bottom:0.5rem; font-weight:600; }
+    .reflection textarea { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:0.75rem 1rem; border-radius:6px; font-size:0.875rem; min-height:80px; resize:vertical; outline:none; font-family:'Segoe UI',sans-serif; margin-bottom:1rem; }
+    .reflection textarea:focus { border-color:var(--blue); }
+    .save-btn { background:#1f6feb; color:#fff; border:none; padding:0.55rem 1.25rem; border-radius:6px; font-size:0.875rem; font-weight:600; cursor:pointer; transition:background 0.15s; }
+    .save-btn:hover { background:#388bfd; }
+    .saved-note { display:none; font-size:0.8rem; color:var(--green); margin-left:0.75rem; }
+    .saved-note.show { display:inline; }
+
+    /* COMPLETION */
+    .completion-banner { background:linear-gradient(135deg,#0e2a1a,#0a1a0a); border:1px solid var(--green-dark); border-radius:12px; padding:2rem; text-align:center; margin-top:2rem; display:none; }
+    .completion-banner.show { display:block; }
+    .completion-banner h2 { font-size:1.5rem; color:var(--green); margin-bottom:0.5rem; }
+    .completion-banner p  { color:var(--text-muted); margin-bottom:1.25rem; }
+    .comp-badges { display:flex; justify-content:center; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .comp-badge { background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:0.75rem 1.25rem; font-size:0.875rem; color:var(--text); display:flex; align-items:center; gap:0.5rem; }
+
+    /* BOTTOM NAV */
+    .bottom-nav { display:flex; justify-content:space-between; align-items:center; margin-top:3rem; padding-top:2rem; border-top:1px solid var(--border-soft); gap:1rem; flex-wrap:wrap; }
+    .bottom-nav a { display:inline-flex; align-items:center; gap:0.5rem; padding:0.65rem 1.5rem; border-radius:8px; font-size:0.9rem; font-weight:600; text-decoration:none; transition:background 0.15s; }
+    .btn-back { background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); }
+    .btn-back:hover { background:var(--bg-hover); color:var(--text-bright); }
+    .btn-next { background:var(--green-dark); border:1px solid var(--green-dark); color:#fff; }
+    .btn-next:hover { background:var(--green); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-left">
+      <a href="../index.html">🛡️ Web Security</a>
+      <span class="nav-sep">›</span>
+      <a href="#">Module 1</a>
+      <span class="nav-sep">›</span>
+      <span class="nav-current">1.4 — Mini-Lab</span>
+    </div>
+    <div class="nav-right">
+      <a class="nav-btn" href="1-3.html">← 1.3 Forms &amp; Input</a>
+      <a class="nav-btn next" href="../modul-2/2-1.html">Next: Module 2 →</a>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="lab-tag">🧪 Module 1 · Mini-Lab</div>
+    <h1>🗒️ Build a Vulnerable Guestbook</h1>
+    <p>You will build a working guestbook application step by step — then exploit it using the techniques from this module. Finally, you will fix it and understand why the fix works.</p>
+    <div class="header-meta">
+      <span>⏱️ ~40 minutes</span>
+      <span>🧪 Hands-on lab</span>
+      <span>🏆 5 tasks</span>
+      <span>🎯 Stored XSS demonstration</span>
+    </div>
+  </div>
+
+  <div class="lab-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="task-list">
+        <div class="task-list-header">Lab Progress</div>
+        <a class="task-item active" href="#task1" id="nav-t1">
+          <span class="task-icon" id="icon-t1">○</span>
+          <span>Task 1 — Build the form</span>
+        </a>
+        <a class="task-item" href="#task2" id="nav-t2">
+          <span class="task-icon" id="icon-t2">○</span>
+          <span>Task 2 — Submit an entry</span>
+        </a>
+        <a class="task-item" href="#task3" id="nav-t3">
+          <span class="task-icon" id="icon-t3">○</span>
+          <span>Task 3 — Inject HTML</span>
+        </a>
+        <a class="task-item" href="#task4" id="nav-t4">
+          <span class="task-icon" id="icon-t4">○</span>
+          <span>Task 4 — Stored XSS</span>
+        </a>
+        <a class="task-item" href="#task5" id="nav-t5">
+          <span class="task-icon" id="icon-t5">○</span>
+          <span>Task 5 — Fix it</span>
+        </a>
+        <div class="progress-bar-wrap">
+          <div class="progress-label"><span>Progress</span><span id="progressLabel">0 / 5</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <div class="callout lab">
+        <div class="callout-title">🧪 Lab Overview</div>
+        This lab simulates a real-world vulnerable web application — a simple guestbook where users can leave messages. Every guest entry is "stored" and displayed to all visitors. You will use everything from Module 1: HTML structure, forms, GET/POST, and input handling.
+        <br><br>
+        The application runs entirely in your browser using localStorage to simulate a database. No server is involved — but the vulnerability and the fix are identical to what you would find on a real server.
+      </div>
+
+
+      <!-- ════ TASK 1 ════ -->
+      <div class="task-card" id="task1">
+        <div class="task-card-header">
+          <div class="task-num" id="tnum1">1</div>
+          <div class="task-title">Build the Guestbook Form</div>
+          <div class="task-status" id="tstatus1">Not started</div>
+        </div>
+        <div class="task-body">
+          <p>Your first task is to write the HTML for a guestbook form. The form needs two fields: a <strong>name</strong> field and a <strong>message</strong> field. Use the editor below.</p>
+
+          <p>The form should:</p>
+          <ul style="padding-left:1.5rem;margin-bottom:1rem;font-size:0.9rem;">
+            <li>Have <code>method="POST"</code> and <code>action="/guestbook"</code></li>
+            <li>Include an <code>&lt;input type="text"&gt;</code> with <code>name="author"</code></li>
+            <li>Include a <code>&lt;textarea&gt;</code> with <code>name="message"</code></li>
+            <li>Include a submit button</li>
+          </ul>
+
+          <div class="editor-wrap">
+            <div class="editor-toolbar">
+              <div class="editor-toolbar-left">
+                <div class="editor-dots"><span class="dr"></span><span class="dy"></span><span class="dg"></span></div>
+                <span class="editor-title">guestbook-form.html</span>
+              </div>
+              <div class="editor-btns">
+                <button class="ed-btn ed-btn-hint" onclick="toggleHint('h1')">💡 Hint</button>
+                <button class="ed-btn ed-btn-reset" onclick="resetEd('t1ed')">Reset</button>
+                <button class="ed-btn ed-btn-run"   onclick="runEd('t1ed','t1prev')">▶ Run</button>
+              </div>
+            </div>
+            <div class="editor-label"><span>✏️ Write the form HTML here</span><span>Preview →</span></div>
+            <div class="editor-panes">
+              <textarea class="editor-code" id="t1ed" spellcheck="false"><!DOCTYPE html>
+<html>
+<body style="font-family:sans-serif; padding:1.5rem; background:#f9f9f9">
+
+  <h2>📝 Leave a Message</h2>
+
+  <!-- Write your form here -->
+  <!-- Remember: method, action, two fields, submit button -->
+
+</body>
+</html></textarea>
+              <iframe class="editor-preview" id="t1prev"></iframe>
+            </div>
+          </div>
+
+          <div class="hint-box" id="h1">
+            <strong style="color:var(--purple)">💡 Hint:</strong> Here is the structure to get you started:
+            <pre>&lt;form method="POST" action="/guestbook"&gt;
+
+  &lt;label&gt;Your name:&lt;/label&gt;&lt;br&gt;
+  &lt;input type="text" name="author" placeholder="Name"&gt;&lt;br&gt;&lt;br&gt;
+
+  &lt;label&gt;Message:&lt;/label&gt;&lt;br&gt;
+  &lt;textarea name="message" rows="4"
+            placeholder="Leave a message..."&gt;&lt;/textarea&gt;&lt;br&gt;&lt;br&gt;
+
+  &lt;button type="submit"&gt;Post Message&lt;/button&gt;
+
+&lt;/form&gt;</pre>
+          </div>
+
+          <!-- Verification -->
+          <div style="margin-top:1rem;">
+            <button class="ed-btn ed-btn-run" onclick="verifyTask1()">✅ Check Task 1</button>
+          </div>
+          <div id="v1-results" style="margin-top:0.75rem;"></div>
+        </div>
+      </div>
+
+
+      <!-- ════ TASK 2 ════ -->
+      <div class="task-card" id="task2">
+        <div class="task-card-header">
+          <div class="task-num" id="tnum2">2</div>
+          <div class="task-title">Submit a Normal Entry</div>
+          <div class="task-status" id="tstatus2">Not started</div>
+        </div>
+        <div class="task-body">
+          <p>
+            The guestbook below is a fully working simulation. Submit a normal entry — use your name and a friendly message.
+            The entry will be stored and displayed in the "All Messages" panel on the right.
+          </p>
+          <p>
+            Notice that below the entries panel, you can see the <strong>raw HTML</strong> the "server" generated.
+            This is what the browser receives. For now, observe how your text appears there.
+          </p>
+
+          <div class="guestbook-sim" id="gbSim">
+            <div class="gb-topbar">
+              <div class="gb-topbar-left">
+                <span class="gb-title">🗒️ Community Guestbook</span>
+                <span class="mode-badge vuln" id="modeBadge">⚠️ Vulnerable Mode</span>
+              </div>
+              <div class="gb-mode-toggle">
+                <span style="font-size:0.78rem;color:var(--text-muted)">Mode:</span>
+                <button class="mode-btn active-vuln" id="btnVuln" onclick="setMode('vuln')">Vulnerable</button>
+                <button class="mode-btn" id="btnSafe" onclick="setMode('safe')">Safe</button>
+              </div>
+            </div>
+
+            <div class="gb-inner">
+              <!-- Form -->
+              <div class="gb-form-pane">
+                <h4>Leave a Message</h4>
+                <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Your name</label>
+                <input  class="gb-field" id="gbName" type="text" placeholder="Your name">
+                <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Message</label>
+                <textarea class="gb-field" id="gbMsg" placeholder="Leave a message for everyone..."></textarea>
+                <button class="gb-submit" onclick="gbSubmit()">Post Message</button>
+                <div id="gbFormNote" style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);"></div>
+              </div>
+
+              <!-- Entries rendered in iframe -->
+              <div class="gb-entries-pane">
+                <h4>All Messages</h4>
+                <iframe id="gbEntriesFrame" sandbox="allow-scripts"
+                  style="width:100%;border:none;min-height:220px;background:transparent;"
+                  srcdoc="<html><body style='font-family:sans-serif;padding:0;margin:0;color:#999;font-style:italic;font-size:0.875rem'>No messages yet.</body></html>">
+                </iframe>
+              </div>
+            </div>
+
+            <!-- Source view -->
+            <div class="gb-source-pane">
+              <div class="gb-source-label">📄 Generated HTML (what the browser receives from the "server")</div>
+              <div class="gb-source-code" id="gbSourceView"><!-- Submit a message to see the HTML --></div>
+            </div>
+          </div>
+
+          <div style="margin-top:1rem;">
+            <button class="ed-btn ed-btn-run" onclick="verifyTask2()">✅ Check Task 2</button>
+          </div>
+          <div id="v2-results" style="margin-top:0.75rem;"></div>
+        </div>
+      </div>
+
+
+      <!-- ════ TASK 3 ════ -->
+      <div class="task-card" id="task3">
+        <div class="task-card-header">
+          <div class="task-num" id="tnum3">3</div>
+          <div class="task-title">Inject HTML into the Guestbook</div>
+          <div class="task-status" id="tstatus3">Not started</div>
+        </div>
+        <div class="task-body">
+          <p>
+            Now that you know the guestbook displays your message directly in HTML,
+            test whether it sanitizes your input. Submit a message that contains an HTML tag.
+          </p>
+          <p>Try each of these in the <strong>message field</strong> of the guestbook above (make sure it is in <strong>Vulnerable</strong> mode):</p>
+
+          <table>
+            <thead><tr><th>Payload</th><th>Expected result if vulnerable</th></tr></thead>
+            <tbody>
+              <tr><td><code>&lt;b&gt;I am bold&lt;/b&gt;</code></td><td>Message appears in <strong>bold</strong> text</td></tr>
+              <tr><td><code>&lt;h1&gt;BIG TEXT&lt;/h1&gt;</code></td><td>Message appears as a large heading</td></tr>
+              <tr><td><code>&lt;marquee&gt;scrolling&lt;/marquee&gt;</code></td><td>Text scrolls across the entry (old but fun)</td></tr>
+              <tr><td><code>&lt;img src=x onerror="this.style.display='none'"&gt;hidden image</code></td><td>Image tag silently fails — confirms tag injection</td></tr>
+            </tbody>
+          </table>
+
+          <div class="callout warning">
+            <div class="callout-title">⚠️ What this tells you</div>
+            If your HTML renders as formatted text instead of appearing as literal characters like <code>&amp;lt;b&amp;gt;</code>, the application is <strong>not encoding output</strong>. This means the browser is interpreting your input as real HTML — HTML injection is confirmed. The next step is JavaScript.
+          </div>
+
+          <div style="margin-top:1rem;">
+            <button class="ed-btn ed-btn-run" onclick="verifyTask3()">✅ Check Task 3</button>
+          </div>
+          <div id="v3-results" style="margin-top:0.75rem;"></div>
+        </div>
+      </div>
+
+
+      <!-- ════ TASK 4 ════ -->
+      <div class="task-card" id="task4">
+        <div class="task-card-header">
+          <div class="task-num" id="tnum4">4</div>
+          <div class="task-title">Achieve Stored XSS</div>
+          <div class="task-status" id="tstatus4">Not started</div>
+        </div>
+        <div class="task-body">
+          <p>
+            HTML injection is confirmed. Now escalate to <strong>Stored XSS</strong> — inject JavaScript that executes
+            every time a visitor loads the guestbook page.
+          </p>
+          <p>In the guestbook above (<strong>Vulnerable mode</strong>), submit a message containing one of these payloads:</p>
+
+          <div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:1rem 1.25rem; margin:1rem 0;">
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.06em;">
+              🧪 XSS Payloads — paste into the Message field
+            </div>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;">
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:0.65rem 1rem;font-family:'Courier New',monospace;font-size:0.82rem;color:var(--yellow);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                <span>&lt;script&gt;alert('XSS by ' + document.title)&lt;/script&gt;</span>
+                <button class="ed-btn ed-btn-reset" style="font-size:0.75rem;padding:0.2rem 0.6rem;" onclick="copyPayload(this,'&lt;script&gt;alert(\'XSS by \' + document.title)&lt;/script&gt;')">Copy</button>
+              </div>
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:0.65rem 1rem;font-family:'Courier New',monospace;font-size:0.82rem;color:var(--yellow);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                <span>&lt;img src=x onerror="alert('Stored XSS!')"&gt;</span>
+                <button class="ed-btn ed-btn-reset" style="font-size:0.75rem;padding:0.2rem 0.6rem;" onclick="copyPayload(this,&quot;&lt;img src=x onerror='alert(\'Stored XSS!\')'&gt;&quot;)">Copy</button>
+              </div>
+              <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:0.65rem 1rem;font-family:'Courier New',monospace;font-size:0.82rem;color:var(--yellow);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+                <span>&lt;svg onload="alert('XSS via SVG')"&gt;&lt;/svg&gt;</span>
+                <button class="ed-btn ed-btn-reset" style="font-size:0.75rem;padding:0.2rem 0.6rem;" onclick="copyPayload(this,'&lt;svg onload=&quot;alert(\'XSS via SVG\')&quot;&gt;&lt;/svg&gt;')">Copy</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="callout security">
+            <div class="callout-title">🔐 Why this is Stored XSS — not Reflected</div>
+            In <strong>Reflected XSS</strong>, the payload is in the URL and only affects the person who clicks the link.
+            In <strong>Stored XSS</strong>, the payload is saved to the database (here: localStorage) and executes for
+            <em>every visitor</em> who loads the page — including administrators, making it far more dangerous.
+            Cookie theft via Stored XSS can compromise every active session at once.
+          </div>
+
+          <div style="margin-top:1rem;">
+            <button class="ed-btn ed-btn-run" onclick="verifyTask4()">✅ Check Task 4</button>
+          </div>
+          <div id="v4-results" style="margin-top:0.75rem;"></div>
+        </div>
+      </div>
+
+
+      <!-- ════ TASK 5 ════ -->
+      <div class="task-card" id="task5">
+        <div class="task-card-header">
+          <div class="task-num" id="tnum5">5</div>
+          <div class="task-title">Fix the Vulnerability</div>
+          <div class="task-status" id="tstatus5">Not started</div>
+        </div>
+        <div class="task-body">
+          <p>
+            Now switch the guestbook to <strong>Safe Mode</strong> using the toggle in the guestbook panel above.
+            Submit the same XSS payloads you used in Task 4 and observe what happens.
+          </p>
+
+          <div class="callout tip">
+            <div class="callout-title">💡 What Safe Mode does</div>
+            Safe Mode runs every message through an <strong>HTML encoding</strong> function before inserting it into the page.
+            The characters <code>&lt;</code> and <code>&gt;</code> are converted to <code>&amp;lt;</code> and <code>&amp;gt;</code> —
+            harmless text the browser displays literally, not as HTML tags. The payload is stored the same way but rendered differently.
+          </div>
+
+          <p>Here is the difference between the two approaches in code:</p>
+
+          <div class="editor-wrap">
+            <div class="editor-toolbar">
+              <div class="editor-toolbar-left">
+                <div class="editor-dots"><span class="dr"></span><span class="dy"></span><span class="dg"></span></div>
+                <span class="editor-title">output-encoding-comparison.js</span>
+              </div>
+            </div>
+            <textarea class="editor-code" style="min-height:220px;" readonly>// ❌ VULNERABLE — inserts raw user input as HTML
+function renderEntryVulnerable(author, message) {
+  return `<div class="entry">
+    <strong>${author}</strong>
+    <p>${message}</p>
+  </div>`;
+  // If message = <script>alert(1)</script>
+  // → the script tag is inserted and EXECUTES
+}
+
+
+// ✅ SAFE — encodes HTML special characters first
+function escapeHtml(str) {
+  return str
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;')
+    .replace(/'/g,  '&#039;');
+}
+
+function renderEntrySafe(author, message) {
+  return `<div class="entry">
+    <strong>${escapeHtml(author)}</strong>
+    <p>${escapeHtml(message)}</p>
+  </div>`;
+  // If message = <script>alert(1)</script>
+  // → rendered as: &lt;script&gt;alert(1)&lt;/script&gt;
+  // → browser shows: <script>alert(1)</script> — as text, not code
+}</textarea>
+          </div>
+
+          <div class="callout info">
+            <div class="callout-title">ℹ️ This is called Output Encoding</div>
+            The fix is applied at the point where data is <em>output</em> to the HTML — not at the input stage.
+            This is a fundamental principle: <strong>encode data for the context where it will be used</strong>.
+            HTML context → HTML encoding. JavaScript context → JavaScript encoding. SQL context → parameterised queries.
+          </div>
+
+          <!-- Safe mode verification -->
+          <p>Now use the guestbook in <strong>Safe Mode</strong> and submit a payload. Then click Check:</p>
+
+          <div style="margin-top:1rem;">
+            <button class="ed-btn ed-btn-run" onclick="verifyTask5()">✅ Check Task 5</button>
+          </div>
+          <div id="v5-results" style="margin-top:0.75rem;"></div>
+        </div>
+      </div>
+
+
+      <!-- ════ REFLECTION ════ -->
+      <div id="reflectionSection" style="display:none;">
+
+        <div class="section-heading">📓 Lab Reflection</div>
+        <p>Answer these questions based on your experience in this lab. Your answers are saved in your browser.</p>
+
+        <div class="reflection">
+          <h3>Reflection Questions</h3>
+
+          <div class="reflection-q">1. What is the difference between Reflected XSS and Stored XSS? Which is more dangerous and why?</div>
+          <textarea id="ref1" placeholder="Write your answer here..."></textarea>
+
+          <div class="reflection-q">2. In Task 5, you fixed the vulnerability with output encoding. Why is it not enough to just validate the input when the user submits the form?</div>
+          <textarea id="ref2" placeholder="Write your answer here..."></textarea>
+
+          <div class="reflection-q">3. In a real penetration test, what would be the next step after confirming Stored XSS with alert()? What would you demonstrate to the client?</div>
+          <textarea id="ref3" placeholder="Write your answer here..."></textarea>
+
+          <button class="save-btn" onclick="saveReflection()">💾 Save Answers</button>
+          <span class="saved-note" id="savedNote">✅ Saved to browser</span>
+        </div>
+
+        <!-- COMPLETION -->
+        <div class="completion-banner" id="completionBanner">
+          <h2>🎉 Lab Complete!</h2>
+          <p>You have completed the Module 1 Mini-Lab. You built a vulnerable web application, exploited it with Stored XSS, and fixed the vulnerability with output encoding.</p>
+          <div class="comp-badges">
+            <div class="comp-badge">🏗️ Built HTML form from scratch</div>
+            <div class="comp-badge">💉 HTML injection confirmed</div>
+            <div class="comp-badge">🚨 Stored XSS executed</div>
+            <div class="comp-badge">🛡️ Output encoding applied</div>
+            <div class="comp-badge">📓 Reflection completed</div>
+          </div>
+          <p style="font-size:0.875rem;color:var(--text-muted);">
+            Module 2 builds on this — you will study the DOM in depth and learn how JavaScript reads and writes to the page, setting up for DOM-based XSS in Module 3.
+          </p>
+        </div>
+
+      </div>
+
+
+      <!-- BOTTOM NAV -->
+      <div class="bottom-nav">
+        <a class="btn-back" href="1-3.html">← 1.3 Forms &amp; User Input</a>
+        <a class="btn-next" href="../modul-2/2-1.html">Next: Module 2 →</a>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+
+    // ══════════════════════════════════════════
+    //  UTILITIES
+    // ══════════════════════════════════════════
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+
+    function toggleHint(id) {
+      const el = document.getElementById(id);
+      el.classList.toggle('show');
+    }
+
+
+    // ══════════════════════════════════════════
+    //  CODE EDITORS
+    // ══════════════════════════════════════════
+    const edDefaults = {};
+
+    function runEd(codeId, previewId) {
+      document.getElementById(previewId).srcdoc = document.getElementById(codeId).value;
+    }
+
+    function resetEd(codeId) {
+      document.getElementById(codeId).value = edDefaults[codeId] || '';
+      const pid = codeId.replace('ed','prev').replace('t1ed','t1prev');
+      if (document.getElementById(pid)) runEd(codeId, pid);
+    }
+
+    window.addEventListener('load', () => {
+      ['t1ed'].forEach(id => {
+        edDefaults[id] = document.getElementById(id).value;
+      });
+      runEd('t1ed','t1prev');
+      loadReflection();
+      renderGuestbook();
+    });
+
+
+    // ══════════════════════════════════════════
+    //  PROGRESS TRACKING
+    // ══════════════════════════════════════════
+    let tasksDone = new Set();
+
+    function completeTask(n) {
+      if (tasksDone.has(n)) return;
+      tasksDone.add(n);
+      document.getElementById(`tnum${n}`).classList.add('done-num');
+      document.getElementById(`tstatus${n}`).textContent = '✅ Complete';
+      document.getElementById(`tstatus${n}`).classList.add('complete');
+      document.getElementById(`icon-t${n}`).textContent = '✓';
+      document.getElementById(`nav-t${n}`).classList.add('done');
+      const pct = (tasksDone.size / 5) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressLabel').textContent = `${tasksDone.size} / 5`;
+      if (tasksDone.size === 5) {
+        document.getElementById('reflectionSection').style.display = 'block';
+        setTimeout(() => document.getElementById('reflectionSection').scrollIntoView({behavior:'smooth'}), 300);
+      }
+      localStorage.setItem('wsec_lab14_done', JSON.stringify([...tasksDone]));
+    }
+
+    function renderVerify(containerId, checks) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = checks.map(c => `
+        <div class="verify-row">
+          <span class="verify-icon">${c.pass ? '✅' : '❌'}</span>
+          <span class="verify-text">${c.label}</span>
+          <span class="verify-badge ${c.pass ? 'vb-pass' : 'vb-fail'}">${c.pass ? 'Pass' : 'Fail'}</span>
+        </div>`).join('');
+      return checks.every(c => c.pass);
+    }
+
+
+    // ══════════════════════════════════════════
+    //  TASK 1 VERIFICATION
+    // ══════════════════════════════════════════
+    function verifyTask1() {
+      const code = document.getElementById('t1ed').value.toLowerCase();
+      const checks = [
+        { label:'Form has method="post"',                    pass: code.includes('method="post"') || code.includes("method='post'") },
+        { label:'Form has action="/guestbook"',              pass: code.includes('action="/guestbook"') || code.includes("action='/guestbook'") },
+        { label:'Input with name="author" present',          pass: code.includes('name="author"') || code.includes("name='author'") },
+        { label:'Textarea with name="message" present',      pass: code.includes('<textarea') && (code.includes('name="message"') || code.includes("name='message'")) },
+        { label:'Submit button present',                     pass: code.includes('type="submit"') || code.includes("type='submit'") || code.includes('<button') }
+      ];
+      const pass = renderVerify('v1-results', checks);
+      if (pass) completeTask(1);
+    }
+
+
+    // ══════════════════════════════════════════
+    //  GUESTBOOK SIMULATION
+    // ══════════════════════════════════════════
+    let gbMode = 'vuln';
+    let gbEntries = JSON.parse(localStorage.getItem('wsec_gb_entries') || '[]');
+    let gbHasHtmlInjection = false;
+    let gbHasXss = false;
+    let gbHasSafeSubmit = false;
+
+    function setMode(mode) {
+      gbMode = mode;
+      document.getElementById('btnVuln').className = 'mode-btn' + (mode==='vuln' ? ' active-vuln' : '');
+      document.getElementById('btnSafe').className = 'mode-btn' + (mode==='safe' ? ' active-safe' : '');
+      const badge = document.getElementById('modeBadge');
+      badge.textContent = mode === 'vuln' ? '⚠️ Vulnerable Mode' : '✅ Safe Mode';
+      badge.className = 'mode-badge ' + (mode==='vuln' ? 'vuln' : 'safe');
+      renderGuestbook();
+    }
+
+    function gbSubmit() {
+      const author  = document.getElementById('gbName').value.trim();
+      const message = document.getElementById('gbMsg').value.trim();
+      if (!author || !message) {
+        document.getElementById('gbFormNote').textContent = '⚠️ Please fill in both fields.';
+        return;
+      }
+      document.getElementById('gbFormNote').textContent = '';
+
+      // Track what kind of content was submitted
+      const hasHtml   = /<[^>]+>/.test(message);
+      const hasScript = /script|onerror|onload|alert|svg\s+onload/i.test(message);
+
+      if (hasScript && gbMode === 'vuln') gbHasXss = true;
+      if (hasHtml   && gbMode === 'vuln') gbHasHtmlInjection = true;
+      if (gbMode === 'safe') gbHasSafeSubmit = true;
+
+      gbEntries.push({ author, message, mode: gbMode, ts: Date.now() });
+      localStorage.setItem('wsec_gb_entries', JSON.stringify(gbEntries));
+
+      document.getElementById('gbName').value = '';
+      document.getElementById('gbMsg').value  = '';
+      renderGuestbook();
+    }
+
+    function renderGuestbook() {
+      const entries = gbEntries;
+      if (!entries.length) {
+        document.getElementById('gbEntriesFrame').srcdoc =
+          `<html><body style="font-family:sans-serif;padding:10px;color:#999;font-style:italic;font-size:0.875rem;margin:0">No messages yet.</body></html>`;
+        document.getElementById('gbSourceView').textContent = '<!-- No entries yet -->';
+        return;
+      }
+
+      let html = '';
+      let sourceHtml = '';
+
+      entries.forEach(e => {
+        const isVulnEntry = (e.mode === 'vuln');
+        const displayAuthor  = isVulnEntry ? e.author  : escHtml(e.author);
+        const displayMessage = isVulnEntry ? e.message : escHtml(e.message);
+
+        html += `<div style="background:#f5f5f5;border:1px solid #ddd;border-radius:6px;padding:0.65rem 0.9rem;margin-bottom:0.5rem;font-size:0.875rem;">
+          <div style="font-weight:700;color:#1f6feb;font-size:0.8rem;margin-bottom:0.25rem;">${displayAuthor}</div>
+          <div>${displayMessage}</div>
+        </div>`;
+
+        sourceHtml += `&lt;div class="entry"&gt;\n`;
+        sourceHtml += `  &lt;strong&gt;${escHtml(e.author)}&lt;/strong&gt;\n`;
+        sourceHtml += `  &lt;p&gt;<span style="color:${isVulnEntry ? 'var(--red)' : 'var(--green)'}">${escHtml(e.message)}</span>&lt;/p&gt;\n`;
+        sourceHtml += `&lt;/div&gt;\n\n`;
+      });
+
+      document.getElementById('gbEntriesFrame').srcdoc =
+        `<html><body style="font-family:sans-serif;padding:10px;margin:0;font-size:0.875rem;background:transparent">${html}</body></html>`;
+      document.getElementById('gbSourceView').innerHTML = sourceHtml;
+    }
+
+    // Clear entries button (useful for reset)
+    function clearEntries() {
+      gbEntries = [];
+      gbHasHtmlInjection = false;
+      gbHasXss = false;
+      gbHasSafeSubmit = false;
+      localStorage.removeItem('wsec_gb_entries');
+      renderGuestbook();
+    }
+
+
+    // ══════════════════════════════════════════
+    //  TASK 2 VERIFICATION
+    // ══════════════════════════════════════════
+    function verifyTask2() {
+      const hasNormal = gbEntries.some(e => {
+        const hasTag = /<[^>]+>/.test(e.message);
+        return !hasTag;
+      });
+      const checks = [
+        { label: 'At least one entry submitted to the guestbook', pass: gbEntries.length > 0 },
+        { label: 'A plain text entry has been submitted',          pass: hasNormal }
+      ];
+      const pass = renderVerify('v2-results', checks);
+      if (pass) completeTask(2);
+    }
+
+
+    // ══════════════════════════════════════════
+    //  TASK 3 VERIFICATION
+    // ══════════════════════════════════════════
+    function verifyTask3() {
+      const hasHtml = gbEntries.some(e => /<[^>]+>/.test(e.message) && e.mode === 'vuln');
+      const checks = [
+        { label: 'An HTML tag was submitted in Vulnerable mode', pass: hasHtml },
+        { label: 'Tag was injected into the guestbook HTML',     pass: hasHtml }
+      ];
+      const pass = renderVerify('v3-results', checks);
+      if (pass) { gbHasHtmlInjection = true; completeTask(3); }
+    }
+
+
+    // ══════════════════════════════════════════
+    //  TASK 4 VERIFICATION
+    // ══════════════════════════════════════════
+    function verifyTask4() {
+      const hasXss = gbEntries.some(e =>
+        /script|onerror|onload|alert|svg\s*onload/i.test(e.message) && e.mode === 'vuln'
+      );
+      const checks = [
+        { label: 'An XSS payload was submitted in Vulnerable mode',       pass: hasXss },
+        { label: 'Script or event-handler payload found in stored entries', pass: hasXss }
+      ];
+      const pass = renderVerify('v4-results', checks);
+      if (pass) { gbHasXss = true; completeTask(4); }
+    }
+
+
+    // ══════════════════════════════════════════
+    //  TASK 5 VERIFICATION
+    // ══════════════════════════════════════════
+    function verifyTask5() {
+      const hasSafeXss = gbEntries.some(e =>
+        /script|onerror|onload|alert|svg/i.test(e.message) && e.mode === 'safe'
+      );
+      const checks = [
+        { label: 'Safe mode has been activated',                       pass: gbMode === 'safe' || gbEntries.some(e => e.mode === 'safe') },
+        { label: 'An XSS payload was submitted in Safe mode',          pass: hasSafeXss },
+        { label: 'Payload rendered as text, not executed',             pass: hasSafeXss }
+      ];
+      const pass = renderVerify('v5-results', checks);
+      if (pass) { gbHasSafeSubmit = true; completeTask(5); }
+    }
+
+
+    // ══════════════════════════════════════════
+    //  PAYLOAD COPY
+    // ══════════════════════════════════════════
+    function copyPayload(btn, payload) {
+      const txt = document.createElement('textarea');
+      txt.innerHTML = payload;
+      const decoded = txt.value;
+      document.getElementById('gbMsg').value = decoded;
+      document.getElementById('gbMsg').focus();
+      btn.textContent = '✓ Pasted';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+      document.getElementById('gbSim').scrollIntoView({behavior:'smooth', block:'center'});
+    }
+
+
+    // ══════════════════════════════════════════
+    //  REFLECTION
+    // ══════════════════════════════════════════
+    function saveReflection() {
+      const data = {
+        r1: document.getElementById('ref1').value,
+        r2: document.getElementById('ref2').value,
+        r3: document.getElementById('ref3').value
+      };
+      localStorage.setItem('wsec_lab14_reflection', JSON.stringify(data));
+      const note = document.getElementById('savedNote');
+      note.classList.add('show');
+      setTimeout(() => note.classList.remove('show'), 3000);
+      if (data.r1.length > 20 && data.r2.length > 20 && data.r3.length > 20) {
+        document.getElementById('completionBanner').classList.add('show');
+        markVisited('1-4-lab');
+      }
+    }
+
+    function loadReflection() {
+      const data = JSON.parse(localStorage.getItem('wsec_lab14_reflection') || '{}');
+      if (data.r1) document.getElementById('ref1').value = data.r1;
+      if (data.r2) document.getElementById('ref2').value = data.r2;
+      if (data.r3) document.getElementById('ref3').value = data.r3;
+
+      const done = JSON.parse(localStorage.getItem('wsec_lab14_done') || '[]');
+      done.forEach(n => {
+        tasksDone.add(n);
+        document.getElementById(`tnum${n}`).classList.add('done-num');
+        document.getElementById(`tstatus${n}`).textContent = '✅ Complete';
+        document.getElementById(`tstatus${n}`).classList.add('complete');
+        document.getElementById(`icon-t${n}`).textContent = '✓';
+        document.getElementById(`nav-t${n}`).classList.add('done');
+      });
+      if (tasksDone.size > 0) {
+        const pct = (tasksDone.size / 5) * 100;
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressLabel').textContent = `${tasksDone.size} / 5`;
+      }
+      if (tasksDone.size === 5) {
+        document.getElementById('reflectionSection').style.display = 'block';
+      }
+    }
+
+    function markVisited(id) {
+      let v = JSON.parse(localStorage.getItem('wsec_visited') || '[]');
+      if (!v.includes(id)) { v.push(id); localStorage.setItem('wsec_visited', JSON.stringify(v)); }
+    }
+
+  </script>
+
+</body>
+</html>
