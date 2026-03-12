@@ -359,16 +359,19 @@
 
           <div class="guestbook-sim" id="gbSim">
             <div class="gb-topbar">
-              <div class="gb-topbar-left">
-                <span class="gb-title">🗒️ Community Guestbook</span>
-                <span class="mode-badge vuln" id="modeBadge">⚠️ Vulnerable Mode</span>
-              </div>
-              <div class="gb-mode-toggle">
-                <span style="font-size:0.78rem;color:var(--text-muted)">Mode:</span>
-                <button class="mode-btn active-vuln" id="btnVuln" onclick="setMode('vuln')">Vulnerable</button>
-                <button class="mode-btn" id="btnSafe" onclick="setMode('safe')">Safe</button>
-              </div>
-            </div>
+  <div class="gb-topbar-left">
+    <span class="gb-title">🗒️ Community Guestbook</span>
+    <span class="mode-badge vuln" id="modeBadge">⚠️ Vulnerable Mode</span>
+  </div>
+  <div class="gb-mode-toggle">
+    <span style="font-size:0.78rem;color:var(--text-muted)">Mode:</span>
+    <button class="mode-btn active-vuln" id="btnVuln" onclick="setMode('vuln')">Vulnerable</button>
+    <button class="mode-btn" id="btnSafe" onclick="setMode('safe')">Safe</button>
+    <!-- ADD THIS -->
+    <button class="mode-btn" onclick="clearEntries()" style="color:var(--red);border-color:#b91c1c44;"
+      title="Clear all guestbook entries">🗑️ Clear</button>
+  </div>
+</div>
 
             <div class="gb-inner">
               <!-- Form -->
@@ -796,13 +799,15 @@ function renderEntrySafe(author, message) {
 
     // Clear entries button (useful for reset)
     function clearEntries() {
-      gbEntries = [];
-      gbHasHtmlInjection = false;
-      gbHasXss = false;
-      gbHasSafeSubmit = false;
-      localStorage.removeItem('wsec_gb_entries');
-      renderGuestbook();
-    }
+  if (!confirm('Clear all guestbook entries?')) return;  // add this safety check
+  gbEntries = [];
+  gbHasHtmlInjection = false;
+  gbHasXss = false;
+  gbHasSafeSubmit = false;
+  localStorage.removeItem('wsec_gb_entries');
+  renderGuestbook();
+}
+
 
 
     // ══════════════════════════════════════════
