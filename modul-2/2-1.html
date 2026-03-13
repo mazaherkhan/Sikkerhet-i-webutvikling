@@ -240,7 +240,7 @@
       </div>
       <div class="dom-vis-body">
         <div class="dom-tree-pane" id="domTreePane">
-          <div class="dom-node" onclick="showDomInfo('window')"><span class="dn-connector">🌐</span><span class="dn-tag">window</span></div>
+          <div class="dom-node" onclick="showDomInfo(event,'window')"><span class="dn-connector">🌐</span><span class="dn-tag">window</span></div>
           <div class="dom-node dn-i1" onclick="showDomInfo('document')"><span class="dn-connector">└─</span><span class="dn-tag">document</span></div>
           <div class="dom-node dn-i2" onclick="showDomInfo('html')"><span class="dn-connector">└─</span><span class="dn-tag">&lt;html&gt;</span></div>
           <div class="dom-node dn-i3" onclick="showDomInfo('head')"><span class="dn-connector">├─</span><span class="dn-tag">&lt;head&gt;</span></div>
@@ -291,7 +291,7 @@
         </div>
         <div class="compare-panel-body">
           <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.4rem;">Type anything — including HTML tags:</div>
-          <input class="compare-input" id="dangerInput" type="text" value="&lt;img src=x onerror=alert('XSS!')&gt;" placeholder="Try: &lt;b&gt;bold&lt;/b&gt;">
+          <input class="compare-input" id="dangerInput" type="text" value="&lt;b&gt;I am bold&lt;/b&gt;" placeholder="Try: &lt;b&gt;bold&lt;/b&gt;">
           <button class="compare-run cr-danger" onclick="runDanger()">▶ Run with innerHTML</button>
           <div class="compare-result-label">Result — browser renders:</div>
           <div class="compare-result" id="dangerResult" style="background:#fff;color:#111;font-family:sans-serif;"></div>
@@ -620,7 +620,6 @@
       const val = document.getElementById('safeInput').value;
       document.getElementById('safeResult').textContent = val;
     }
-    window.addEventListener('load', () => { runDanger(); runSafe(); });
 
     // ── DOM Tree info ──
     const domInfoData = {
@@ -666,9 +665,9 @@
       }
     };
 
-    function showDomInfo(id) {
-      document.querySelectorAll('.dom-node').forEach(n => n.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
+    function showDomInfo(e, id) {
+  document.querySelectorAll('.dom-node').forEach(n => n.classList.remove('selected'));
+  e.currentTarget.classList.add('selected');
       const d = domInfoData[id];
       document.getElementById('domInfoPane').innerHTML = `
         <h4>${d.title}</h4>
