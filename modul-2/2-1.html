@@ -735,7 +735,7 @@
       textContent: {
         name: 'textContent', risk: 'low',
         desc: 'Always safe. Treats the value as plain text — never parses HTML. The browser displays angle brackets as literal characters, not tag delimiters. Use this by default whenever displaying user-generated content.',
-        code: '// Always safe — use this by default\nelement.textContent = userInput;\n\n// Even this is completely harmless:\n// <script>alert(document.cookie)</script>\n// → shown as literal text, never executed'
+        code: '// Always safe — use this by default\nelement.textContent = userInput;\n\n// Even this is completely harmless:\n// <script>alert(document.cookie)<\/script>\n// → shown as literal text, never executed'
       },
       innerText: {
         name: 'innerText', risk: 'low',
